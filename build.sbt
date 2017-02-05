@@ -5,7 +5,7 @@ lazy val commonSettings = Seq(
 )
 
 
-lazy val root = (project in file(".")).aggregate(server, client)
+lazy val wishr = (project in file(".")).aggregate(server, client)
 
 lazy val server = (project in file("server"))
   .settings( commonSettings )

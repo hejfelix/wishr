@@ -4,12 +4,17 @@
     <meta charset="UTF-8">
     <title>WishR</title>
   </head>
+
+  <script type="text/javascript" src="./client/target/scala-2.12/client-jsdeps.js"></script>
+
   <body>
+  <button id="click-me-button" type="button">Click me!</button>
+  <div id="wishr-app"></div>
     <!-- Include Scala.js compiled code -->
     <script type="text/javascript" src="./client/target/scala-2.12/client-fastopt.js"></script>
     <!-- Run com.lambdaminute.wishr.TutorialApp -->
     <script type="text/javascript">
-      com.lambdaminute.wishr.TutorialApp().main();
+      com.lambdaminute.wishr.MyReactComponent().main();
     </script>
   </body>
 </html>
