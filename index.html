@@ -1,20 +1,30 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <link rel="stylesheet" href="styles.css">
     <meta charset="UTF-8">
     <title>WishR</title>
   </head>
 
-  <script type="text/javascript" src="./client/target/scala-2.12/client-jsdeps.js"></script>
+  <!--all js dependencies-->
+
 
   <body>
-  <button id="click-me-button" type="button">Click me!</button>
-  <div id="wishr-app"></div>
+    <script type="text/javascript" src="./assets/index-bundle.js"></script>
+    <script type="text/javascript" src="./assets/material_ui-bundle.js"></script>
+
     <!-- Include Scala.js compiled code -->
-    <script type="text/javascript" src="./client/target/scala-2.12/client-fastopt.js"></script>
+    <script type="text/javascript" src="./client/target/scala-2.11/client-fastopt.js"></script>
     <!-- Run com.lambdaminute.wishr.TutorialApp -->
+
+
+    <div id="wishr-app"></div>
     <script type="text/javascript">
+  	console.log("Injecting tapEventPlugin...");
+  	window.injectTapEventPlugin();
       com.lambdaminute.wishr.MyReactComponent().main();
     </script>
+
+
   </body>
 </html>

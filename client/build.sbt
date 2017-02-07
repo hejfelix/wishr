@@ -3,7 +3,15 @@ enablePlugins(ScalaJSPlugin)
 libraryDependencies += "be.doeraene" %%% "scalajs-jquery" % "0.9.1"
 
 // core = essentials only. No bells or whistles.
-libraryDependencies += "com.github.japgolly.scalajs-react" %%% "core" % "0.11.3"
+//libraryDependencies += "com.github.japgolly.scalajs-react" %%% "core" % "0.11.3"
+
+libraryDependencies ++= Seq(
+                             "com.github.japgolly.scalajs-react" %%% "core" % "0.11.3",
+                             "com.github.japgolly.scalajs-react" %%% "extra" % "0.11.3"
+                           )
+
+libraryDependencies += "com.github.chandu0101.scalajs-react-components" % "core_sjs0.6_2.11" % "0.5.0"
+
 
 // React JS itself (Note the filenames, adjust as needed, eg. to remove addons.)
 jsDependencies ++= Seq(

@@ -2,3 +2,5 @@
 target/
 client/target/
 server/target/
+node_modules/
+assets/
