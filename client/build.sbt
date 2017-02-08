@@ -12,6 +12,10 @@ libraryDependencies ++= Seq(
 
 libraryDependencies += "com.github.chandu0101.scalajs-react-components" % "core_sjs0.6_2.11" % "0.5.0"
 
+libraryDependencies += "com.lihaoyi" %%% "upickle" % "0.4.3"
+
+libraryDependencies += "org.scala-js" % "scalajs-tools_2.11" % "0.6.14"
+
 
 // React JS itself (Note the filenames, adjust as needed, eg. to remove addons.)
 jsDependencies ++= Seq(

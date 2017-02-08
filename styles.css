@@ -1,5 +1,6 @@
 html, body{
     background-color: #b7e9ff;
+    height: 100%;
 }
 
 .UserCard p {
@@ -7,6 +8,25 @@ html, body{
     padding-left: 32px;
 }
 
-.CardsList div {
+.WishCard p {
+      height: 100%;
+      padding-top: 10px;
+      padding-bottom: 10px;
+      padding-left: 32px;
+}
 
+.WishCard h3 {
+    height: 100%;
+      padding-top: 20px;
+      padding-left: 32px;
+}
+
+.WishCard img {
+      padding-right: 24px;
+      width: 5cm;
+      float: right;
+}
+
+.CardsList div {
+    min-height: 5cm;
 }

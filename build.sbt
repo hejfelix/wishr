@@ -5,11 +5,22 @@ lazy val commonSettings = Seq(
 )
 
 
-lazy val wishr = (project in file(".")).aggregate(server, client)
+lazy val wishr =
+  (project in file("."))
+  .aggregate(server, client)
+
+lazy val model = (crossProject in file ("model"))
+  .settings( commonSettings )
+  .jvmSettings (  )
+  .jsSettings ( )
+
+lazy val modelJS = model.js
+lazy val modelJVM = model.jvm
 
 lazy val server = (project in file("server"))
+  .dependsOn( modelJVM )
   .settings( commonSettings )
 
 lazy val client = (project in file("client"))
-  .dependsOn( server )
+  .dependsOn( modelJS )
   .settings( commonSettings )
