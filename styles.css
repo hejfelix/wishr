@@ -8,25 +8,44 @@ html, body{
     padding-left: 32px;
 }
 
-.WishCard p {
-      height: 100%;
-      padding-top: 10px;
-      padding-bottom: 10px;
-      padding-left: 32px;
+.CardsList > div {
+  margin-top: 20px;
+}
+
+hr {
+  border: none;
+  height: 1px;
+  background-color: #dadada;
+}
+
+.WishCard {
+  padding: 20px;
 }
 
 .WishCard h3 {
-    height: 100%;
-      padding-top: 20px;
-      padding-left: 32px;
+    margin-top: 0;
 }
 
-.WishCard img {
-      padding-right: 24px;
-      width: 5cm;
+.clearfix:after {
+  content: ".";
+  display: block;
+  height: 0;
+  clear: both;
+  visibility: hidden;
+}
+
+.WishCard .WishCard-Content {
+}
+
+.WishCard .WishCard-Content-Image {
       float: right;
+      max-width: 300px;
 }
 
-.CardsList div {
-    min-height: 5cm;
+.WishCard .WishCard-Content-Image img {
+      width: 100%;
+}
+
+.WishCard {
+  clear: both;
 }
