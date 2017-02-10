@@ -18,6 +18,8 @@ import com.lambdaminute.wishr.model.{Wish, WishList}
 
 object EditWishesPage {
 
+  case class Props(owner: String)
+
   case class State(deleteDialogIsOpen: Boolean,
                    wishes: WishList,
                    selectedWish: Option[Wish],
@@ -32,7 +34,7 @@ object EditWishesPage {
       case None => s
     }
 
-  class Backend($ : BackendScope[_, State]) {
+  class Backend($ : BackendScope[Props, State]) {
 
     def openAndSelect(w: Wish): Callback =
       $.modState(s =>
@@ -56,15 +58,15 @@ object EditWishesPage {
     def handleDelete(w: Wish): ReactEventH => Callback =
       e => $.modState(removeSelectedAndClose)
 
-    def render(S: State) = {
+    def render(S: State, P: Props) = {
 
       lazy val deleteDialog = MuiDialog(
-        title = "Dialog With Actions",
+        title = "Are you sure?",
         actions = actions,
         open = S.deleteDialogIsOpen,
         onRequestClose = handleClose
       )(
-        "Dialog example with floating buttons"
+        "Deleting a wish cannot be undone"
       )
 
       lazy val cards =
@@ -74,10 +76,10 @@ object EditWishesPage {
         cards
       )
 
-      lazy val actions: ReactNode = scalajs.js.Array(
+      lazy val actions: ReactNode = List(
         MuiFlatButton(key = "1",
                       label = "Cancel",
-                      secondary = true,
+                      primary = true,
                       onTouchTap = handleDialogCancel)(),
         MuiFlatButton(key = "2",
                       label = "Delete",
@@ -85,7 +87,11 @@ object EditWishesPage {
                       onTouchTap = handleDialogSubmit)()
       )
 
-      MuiMuiThemeProvider(muiTheme = S.theme)(<.div(deleteDialog, wishCards))
+      lazy val title = MuiPaper(zDepth = ZDepth._2)(
+        <.h2(s"Welcome to the wish list of ${P.owner}")())
+
+      MuiMuiThemeProvider(muiTheme = S.theme)(
+        <.div(title, deleteDialog, wishCards))
     }
   }
 

@@ -49,3 +49,20 @@ hr {
 .WishCard {
   clear: both;
 }
+
+.wish-card-enter {
+    opacity: 0.01;
+    transition: opacity .5s ease-in;
+}
+
+.wish-card-enter.wish-card-enter-active {
+    opacity: 1;
+}
+.wish-card-leave {
+    opacity: 1;
+    transition: opacity .5s ease-in;
+}
+
+.wish-card-leave.example-leave-active {
+    opacity: 0.01;
+}

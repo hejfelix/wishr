@@ -12,8 +12,8 @@ import scala.scalajs
 import scala.scalajs.js
 import scala.scalajs.js.Any
 import scalaz.Alpha.S
-
 import chandu0101.scalajs.react.components.Implicits._
+import japgolly.scalajs.react.Addons.ReactCssTransitionGroup
 object WishCard {
 
   case class State(wish: Wish)
@@ -66,11 +66,14 @@ object WishCard {
                       onClick = props.openDeleteDialog)()
       )
 
-      MuiPaper(zDepth = ZDepth._2)(
-        <.div(
-          ^.cls := "WishCard",
-          wishCardContent,
-          wishCardActions
+      ReactCssTransitionGroup("wish-card", component = "h1")(
+
+        MuiPaper(zDepth = ZDepth._4)(
+          <.div(
+            ^.cls := "WishCard",
+            wishCardContent,
+            wishCardActions
+          )
         )
       )
 

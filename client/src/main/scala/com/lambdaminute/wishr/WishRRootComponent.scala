@@ -29,6 +29,7 @@ object WishRRootComponent extends JSApp {
 
   val testString =
     """|{
+       |  "owner" : "Felix Palludan Hargreaves",
        |  "password":"34c91db1b0b0ab048507cb3592ae700b",
        |  "wishes":[
        |    {
@@ -56,9 +57,10 @@ object WishRRootComponent extends JSApp {
     def wishes: WishList = read[WishList](testString)
 
     val editWishesPage =
-      ReactComponentB[Unit]("UserCard")
+      ReactComponentB[EditWishesPage.Props]("UserCard")
         .initialState(EditWishesPage.State(false, wishes, None, theme))
         .renderBackend[EditWishesPage.Backend]
+        .propsDefault(EditWishesPage.Props(wishes.owner))
         .build()
 
     val domRoot = document.getElementById("wishr-app")
