@@ -7,9 +7,11 @@ import com.lambdaminute.wishr.component.{EditWishesPage, UserCard, WishCard}
 import com.lambdaminute.wishr.model.{Wish, WishList}
 import com.sun.org.apache.xpath.internal.operations.Bool
 import japgolly.scalajs.react
+import japgolly.scalajs.react.Addons.ReactCssTransitionGroup
 import japgolly.scalajs.react.ReactComponentC.BaseCtor
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{
+  BackendScope,
   Callback,
   ReactComponentB,
   ReactComponentC,
@@ -51,6 +53,32 @@ object WishRRootComponent extends JSApp {
        |}""".stripMargin
 
   def main(): Unit = {
+    var i = 1
+    class Backend($ : BackendScope[Unit, Vector[String]]) {
+      def handleAdd = {
+        i = i + 1
+        $.modState(_ :+ s"bla$i")
+      }
+
+      def handleRemove(i: Int) =
+        $.modState(_.zipWithIndex.filterNot(_._2 == i).map(_._1))
+
+      def render(state: Vector[String]) =
+        <.div(
+          <.button(^.onClick --> handleAdd, "Add Item"),
+          ReactCssTransitionGroup("example", component = "h1")(
+            state.zipWithIndex.map {
+              case (s, i) =>
+                <.div(^.key := s, ^.onClick --> handleRemove(i), s)
+            }: _*
+          )
+        )
+    }
+
+    val TodoList = ReactComponentB[Unit]("TodoList")
+      .initialState(Vector("hello", "world", "click", "me"))
+      .renderBackend[Backend]
+      .build
 
     val theme: MuiTheme = Mui.Styles.getMuiTheme(Mui.Styles.LightRawTheme)
 
@@ -58,13 +86,29 @@ object WishRRootComponent extends JSApp {
 
     val editWishesPage =
       ReactComponentB[EditWishesPage.Props]("UserCard")
-        .initialState(EditWishesPage.State(false, wishes, None, theme))
+        .initialState(EditWishesPage
+          .State(false, wishes.owner, wishes.wishes, None, Nil, theme))
         .renderBackend[EditWishesPage.Backend]
         .propsDefault(EditWishesPage.Props(wishes.owner))
         .build()
 
     val domRoot = document.getElementById("wishr-app")
     ReactDOM.render(editWishesPage, domRoot)
+
+//    val wishCard = ReactComponentB[WishCard.Props]("card")
+//      .initialState(WishCard.State(Wish("bog", "den er sej", None)))
+//      .renderBackend[WishCard.Backend]
+//      .propsDefault(
+//        WishCard.Props(
+//          _ => Callback.empty,
+//          _ => Callback.empty,
+//          w => Callback.info(w.toString),
+//          0,
+//          true
+//        )).build()
+//
+//    val domRoot = document.getElementById("wishr-app")
+//    ReactDOM.render(MuiMuiThemeProvider(muiTheme = theme)(wishCard), domRoot)
 
   }
 

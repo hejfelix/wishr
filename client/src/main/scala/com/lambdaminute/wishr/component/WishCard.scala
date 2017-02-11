@@ -18,20 +18,42 @@ object WishCard {
 
   case class State(wish: Wish)
 
-  case class Props(openDeleteDialog: ReactEventH => Callback)
+  case class Props(openDeleteDialog: ReactEventH => Callback,
+                   startEditing: ReactEventH => Callback,
+                   onFinishedUpdate: Wish => Callback,
+                   index: Int,
+                   editing: Boolean)
 
-  def fromWish(wish: Wish, openDeleteDialog: Callback) =
+  def fromWish(wish: Wish,
+               openDeleteDialog: Callback,
+               index: Int,
+               editing: Boolean,
+               startEditing: Callback,
+               onFinishedUpdate: Wish => Callback) =
     ReactComponentB[WishCard.Props]("WishCard")
       .initialState(WishCard.State(wish))
       .renderBackend[WishCard.Backend]
       .propsDefault {
         WishCard.Props(
-          _ => openDeleteDialog
+          _ => openDeleteDialog,
+          _ => startEditing,
+          onFinishedUpdate,
+          index,
+          editing
         )
       }
-      .build
+      .build()
 
   class Backend($ : BackendScope[Props, State]) {
+
+    def handleChange: ReactEventI => Callback =
+      e => {
+        e.persist()
+        $.modState(s => {
+          s.copy(wish = s.wish.copy(heading = e.target.value))
+        })
+      } >> Callback
+        .info(s"new value: ${e.target.value}")
 
     def lookupIcon(name: String): MuiSvgIcon = {
       val lookup = Mui.SvgIcons.asInstanceOf[scalajs.js.Dynamic]
@@ -56,24 +78,63 @@ object WishCard {
               _react_fragReactNode(s"${S.wish.desc}"))
       )
 
+      val titleEditField = MuiTextField(floatingLabelText = "Title",
+                                        defaultValue = S.wish.heading,
+                                        onChange = handleChange)()
+      val descriptionEditField =
+        MuiTextField(multiLine = true,
+                     floatingLabelText = "Description",
+                     defaultValue = S.wish.desc)()
+
+      val editingContent = <.div(
+        ^.cls := "WishCard-Content clearfix",
+        <.div(^.cls := "WishCard-Content-Image", createImage(S.wish.image)),
+        <.div(
+          ^.cls := "WishCard-Content-Description",
+          titleEditField,
+          descriptionEditField
+        )
+      )
+
       val wishCardActions = <.div(
         ^.cls := "WishCard-Actions",
         <.hr(),
-        MuiFlatButton(key = "edit", label = "Edit", primary = true)(),
+        MuiFlatButton(key = "edit",
+                      label = "Edit",
+                      primary = true,
+                      onClick = props.startEditing)(),
         MuiFlatButton(key = "delete",
                       label = "Delete",
                       secondary = true,
                       onClick = props.openDeleteDialog)()
       )
 
-      ReactCssTransitionGroup("wish-card", component = "h1")(
+      val editCardActions = <.div(
+        ^.cls := "WishCard-Actions",
+        <.hr(),
+        MuiFlatButton(key = "Finish",
+                      label = "Finish",
+                      primary = true,
+                      onClick = (rh: ReactEventH) =>
+                        props.onFinishedUpdate(
+                          S.wish
+                      ))(),
+        MuiFlatButton(
+          key = "Cancel",
+          label = "Cancel",
+          secondary = true,
+          onClick = (rh: ReactEventH) => Callback.info(s"cancel edit: $rh"))()
+      )
 
-        MuiPaper(zDepth = ZDepth._4)(
-          <.div(
-            ^.cls := "WishCard",
-            wishCardContent,
-            wishCardActions
-          )
+      println(s"Adding wish number ${props.index} with text ${S.wish.heading}")
+
+      MuiPaper(zDepth = ZDepth._4,
+               key = props.index.toString,
+               transitionEnabled = true)(
+        <.div(
+          ^.cls := "WishCard",
+          if (props.editing) editingContent else wishCardContent,
+          if (props.editing) editCardActions else wishCardActions
         )
       )
 

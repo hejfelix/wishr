@@ -1,8 +1,11 @@
 window.ReactDOM = require('react-dom');
 window.React    = require('react');
 window.CSSTransitionGroup = require('react-addons-css-transition-group');
+window.TransitionGroup = require('react-addons-transition-group');
+window.React.addons = { CSSTransitionGroup : window.CSSTransitionGroup };
 
 console.log("css stuff");
+console.log("addons:"+React.addons);
 console.log(window.CSSTransitionGroup);
 
 var injectTapEventPlugin = require('react-tap-event-plugin');

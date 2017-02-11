@@ -50,19 +50,27 @@ hr {
   clear: both;
 }
 
-.wish-card-enter {
+
+.example-enter {
     opacity: 0.01;
-    transition: opacity .5s ease-in;
+    transition: opacity left 500000ms linear;
 }
 
-.wish-card-enter.wish-card-enter-active {
+.example-enter-active {
     opacity: 1;
 }
-.wish-card-leave {
-    opacity: 1;
-    transition: opacity .5s ease-in;
+.example-leave {
+  opacity: 1;
 }
 
-.wish-card-leave.example-leave-active {
-    opacity: 0.01;
+.example-leave.example-leave-active {
+  opacity: 0.01;
+  transition: opacity 3000ms ease-in;
+}
+
+.add-wish {
+      float: right;
+}
+.edit-page-title{
+      color: white;
 }

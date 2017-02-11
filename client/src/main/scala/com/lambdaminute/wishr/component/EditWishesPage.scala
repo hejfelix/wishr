@@ -1,12 +1,7 @@
 package com.lambdaminute.wishr.component
 
 import derive.key
-import japgolly.scalajs.react.{
-  BackendScope,
-  Callback,
-  ReactComponentB,
-  ReactNode
-}
+import japgolly.scalajs.react.{BackendScope, Callback, ReactComponentB, ReactNode}
 
 import scala.scalajs
 import scala.scalajs.js
@@ -15,24 +10,42 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.prefix_<^._
 import chandu0101.scalajs.react.components.Implicits._
 import com.lambdaminute.wishr.model.{Wish, WishList}
+import japgolly.scalajs.react.Addons.ReactCssTransitionGroup
+import Mui.SvgIcons.ImageControlPoint
+import com.lambdaminute.wishr.component.WishCard.{Backend, Props, State}
+import japgolly.scalajs.react.ReactComponentC.DefaultProps
+
+import scalacss.mutable.StyleSheet
 
 object EditWishesPage {
 
   case class Props(owner: String)
 
   case class State(deleteDialogIsOpen: Boolean,
-                   wishes: WishList,
+                   user: String,
+                   wishes: List[Wish],
                    selectedWish: Option[Wish],
+                   editingWishes: List[Wish],
                    theme: MuiTheme)
+
+  def dropFirstMatch[T](l: List[T], t: T) =
+    l.takeWhile(_ != t) ++ l.dropWhile(_ != t).drop(1)
 
   def removeSelectedAndClose(s: State): State =
     s.selectedWish match {
       case Some(w) =>
         s.copy(deleteDialogIsOpen = false,
-               wishes =
-                 s.wishes.copy(wishes = s.wishes.wishes.filterNot(_ == w)))
+               wishes = dropFirstMatch(s.wishes, w))
       case None => s
     }
+
+  def changeWish(from: Wish, to: Wish)(state: State): State =
+    state.copy(
+      wishes = state.wishes.takeWhile(_ != from) ++ (to :: state.wishes
+          .dropWhile(_ != from)
+          .drop(1)))
+
+  def addWish(w: Wish)(s: State): State = s.copy(wishes = w :: s.wishes)
 
   class Backend($ : BackendScope[Props, State]) {
 
@@ -44,6 +57,9 @@ object EditWishesPage {
             s"selected $w")
 
     val close: Callback = $.modState(s => s.copy(deleteDialogIsOpen = false))
+
+    def handleAddWish: ReactEventH => Callback =
+      e => $.modState(addWish(Wish("New Wish", "Description", None)))
 
     def handleDialogCancel: ReactEventH => Callback =
       e => close >> Callback.info("Cancel Clicked")
@@ -58,6 +74,13 @@ object EditWishesPage {
     def handleDelete(w: Wish): ReactEventH => Callback =
       e => $.modState(removeSelectedAndClose)
 
+    def startEditing(w: Wish): Callback =
+      $.modState(s => s.copy(editingWishes = w :: s.editingWishes))
+
+    def stopEditingAndUpdate(w: Wish): Callback =
+      $.modState(s =>
+        s.copy(editingWishes = dropFirstMatch(s.editingWishes, w)))
+
     def render(S: State, P: Props) = {
 
       lazy val deleteDialog = MuiDialog(
@@ -70,7 +93,20 @@ object EditWishesPage {
       )
 
       lazy val cards =
-        S.wishes.wishes.map(w => WishCard.fromWish(w, openAndSelect(w))())
+        S.wishes.zipWithIndex.map {
+          case (w, i) =>
+            WishCard.fromWish(
+              w,
+              openAndSelect(w),
+              i,
+              S.editingWishes.contains(w),
+              startEditing(w),
+              newWish =>
+                $.modState(changeWish(w, newWish)) >> Callback.info(
+                  s"Changed state from $w to $newWish")
+            )
+        }
+
       lazy val wishCards = <.div(
         ^.cls := "CardsList",
         cards
@@ -87,11 +123,30 @@ object EditWishesPage {
                       onTouchTap = handleDialogSubmit)()
       )
 
-      lazy val title = MuiPaper(zDepth = ZDepth._2)(
-        <.h2(s"Welcome to the wish list of ${P.owner}")())
+      lazy val title = <.h2(s"Welcome to the wish list of ${P.owner}")(
+        ^.cls := "edit-page-title")
+
+//      object AddButtonStyle extends StyleSheet.Inline {
+//
+//        import dsl._
+//
+//        val container = style(maxWidth(1024 px))
+//
+//        val content = style(display.flex,
+//                            padding(30.px),
+//                            flexDirection.column,
+//                            alignItems.center)
+//      }
+
+      lazy val addWishButton =
+        MuiFloatingActionButton(key = "floating1",
+                                onMouseUp = handleAddWish,
+                                className = "add-wish")(
+          ImageControlPoint(
+            )())
 
       MuiMuiThemeProvider(muiTheme = S.theme)(
-        <.div(title, deleteDialog, wishCards))
+        <.div(addWishButton, <.div(title, deleteDialog, wishCards)))
     }
   }
 
