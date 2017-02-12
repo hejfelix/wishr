@@ -15,24 +15,53 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.prefix_<^._
 import chandu0101.scalajs.react.components.Implicits._
 import com.lambdaminute.wishr.model.{Wish, WishList}
+import japgolly.scalajs.react.Addons.ReactCssTransitionGroup
+import Mui.SvgIcons.ImageControlPoint
+import com.lambdaminute.wishr.component.WishCard.{Backend, Props, State}
+import japgolly.scalajs.react.ReactComponentC.DefaultProps
+
+import scalacss.mutable.StyleSheet
 
 object EditWishesPage {
 
+  case class Props(owner: String)
+
   case class State(deleteDialogIsOpen: Boolean,
-                   wishes: WishList,
+                   user: String,
+                   wishes: List[Wish],
                    selectedWish: Option[Wish],
+                   editingWishes: List[Wish],
                    theme: MuiTheme)
+
+  def dropFirstMatch[T](l: List[T], t: T) =
+    l.takeWhile(_ != t) ++ l.dropWhile(_ != t).drop(1)
 
   def removeSelectedAndClose(s: State): State =
     s.selectedWish match {
       case Some(w) =>
         s.copy(deleteDialogIsOpen = false,
-               wishes =
-                 s.wishes.copy(wishes = s.wishes.wishes.filterNot(_ == w)))
+               wishes = dropFirstMatch(s.wishes, w))
       case None => s
     }
 
-  class Backend($ : BackendScope[_, State]) {
+  def changeWish(from: Wish, to: Wish)(state: State): State =
+    state.copy(
+      wishes = state.wishes.takeWhile(_ != from) ++ (to :: state.wishes
+          .dropWhile(_ != from)
+          .drop(1)))
+
+  def addWish(w: Wish, inEditMode: Boolean = false)(s: State): State =
+    if (inEditMode)
+      s.copy(
+        wishes = w :: s.wishes,
+        editingWishes = w :: s.editingWishes
+      )
+    else
+      s.copy(
+        wishes = w :: s.wishes
+      )
+
+  class Backend($ : BackendScope[Props, State]) {
 
     def openAndSelect(w: Wish): Callback =
       $.modState(s =>
@@ -42,6 +71,9 @@ object EditWishesPage {
             s"selected $w")
 
     val close: Callback = $.modState(s => s.copy(deleteDialogIsOpen = false))
+
+    def handleAddWish: ReactEventH => Callback =
+      e => $.modState(addWish(Wish("New Wish", "Description", None), true))
 
     def handleDialogCancel: ReactEventH => Callback =
       e => close >> Callback.info("Cancel Clicked")
@@ -56,28 +88,53 @@ object EditWishesPage {
     def handleDelete(w: Wish): ReactEventH => Callback =
       e => $.modState(removeSelectedAndClose)
 
-    def render(S: State) = {
+    def startEditing(w: Wish): Callback =
+      $.modState(s => s.copy(editingWishes = w :: s.editingWishes))
+
+    def stopEditingAndUpdate(w: Wish): Callback =
+      $.modState(s => {
+        val newEditing = dropFirstMatch(s.editingWishes, w)
+        println(
+          s"editing before ${s.editingWishes.map(_.heading)},  now: ${newEditing}")
+        s.copy(editingWishes = newEditing)
+      })
+
+    def render(S: State, P: Props) = {
 
       lazy val deleteDialog = MuiDialog(
-        title = "Dialog With Actions",
+        title = "Are you sure?",
         actions = actions,
         open = S.deleteDialogIsOpen,
         onRequestClose = handleClose
       )(
-        "Dialog example with floating buttons"
+        "Deleting a wish cannot be undone"
       )
 
       lazy val cards =
-        S.wishes.wishes.map(w => WishCard.fromWish(w, openAndSelect(w))())
+        S.wishes.zipWithIndex.map {
+          case (w, i) =>
+            WishCard.fromWish(
+              w,
+              openAndSelect(w),
+              i,
+              S.editingWishes.contains(w),
+              startEditing(w),
+              newWish =>
+                stopEditingAndUpdate(w) >>
+                  $.modState(changeWish(w, newWish)) >> Callback.info(
+                  s"Changed state from $w to $newWish. ${S.editingWishes}")
+            )
+        }
+
       lazy val wishCards = <.div(
         ^.cls := "CardsList",
         cards
       )
 
-      lazy val actions: ReactNode = scalajs.js.Array(
+      lazy val actions: ReactNode = List(
         MuiFlatButton(key = "1",
                       label = "Cancel",
-                      secondary = true,
+                      primary = true,
                       onTouchTap = handleDialogCancel)(),
         MuiFlatButton(key = "2",
                       label = "Delete",
@@ -85,7 +142,18 @@ object EditWishesPage {
                       onTouchTap = handleDialogSubmit)()
       )
 
-      MuiMuiThemeProvider(muiTheme = S.theme)(<.div(deleteDialog, wishCards))
+      lazy val title = <.h2(s"Welcome to the wish list of ${P.owner}")(
+        ^.cls := "edit-page-title")
+
+      lazy val addWishButton =
+        MuiFloatingActionButton(key = "floating1",
+                                onMouseUp = handleAddWish,
+                                className = "add-wish")(
+          ImageControlPoint(
+            )())
+
+      MuiMuiThemeProvider(muiTheme = S.theme)(
+        <.div(addWishButton, <.div(title, deleteDialog, wishCards)))
     }
   }
 
