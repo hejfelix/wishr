@@ -21,6 +21,7 @@ object WishCard {
   case class Props(openDeleteDialog: ReactEventH => Callback,
                    startEditing: ReactEventH => Callback,
                    onFinishedUpdate: Wish => Callback,
+                   startingState: Wish,
                    index: Int,
                    editing: Boolean)
 
@@ -38,6 +39,7 @@ object WishCard {
           _ => openDeleteDialog,
           _ => startEditing,
           onFinishedUpdate,
+          wish,
           index,
           editing
         )
@@ -46,14 +48,32 @@ object WishCard {
 
   class Backend($ : BackendScope[Props, State]) {
 
-    def handleChange: ReactEventI => Callback =
+    def handleTitleChange: ReactEventI => Callback =
       e => {
         e.persist()
         $.modState(s => {
           s.copy(wish = s.wish.copy(heading = e.target.value))
         })
       } >> Callback
-        .info(s"new value: ${e.target.value}")
+        .info(s"new value for title: ${e.target.value}")
+
+    def handleImageChange: ReactEventI => Callback =
+      e => {
+        e.persist()
+        $.modState(s => {
+          s.copy(wish = s.wish.copy(image = Option(e.target.value)))
+        })
+      } >> Callback
+        .info(s"new value for image: ${e.target.value}")
+
+    def handleDescriptionChange: ReactEventI => Callback =
+      e => {
+        e.persist()
+        $.modState(s => {
+          s.copy(wish = s.wish.copy(desc = e.target.value))
+        })
+      } >> Callback
+        .info(s"new value for image: ${e.target.value}")
 
     def lookupIcon(name: String): MuiSvgIcon = {
       val lookup = Mui.SvgIcons.asInstanceOf[scalajs.js.Dynamic]
@@ -80,11 +100,17 @@ object WishCard {
 
       val titleEditField = MuiTextField(floatingLabelText = "Title",
                                         defaultValue = S.wish.heading,
-                                        onChange = handleChange)()
+                                        onChange = handleTitleChange)()
       val descriptionEditField =
         MuiTextField(multiLine = true,
                      floatingLabelText = "Description",
-                     defaultValue = S.wish.desc)()
+                     defaultValue = S.wish.desc,
+                     onChange = handleDescriptionChange)()
+
+      val imageEditField =
+        MuiTextField(floatingLabelText = "Image URL",
+                     defaultValue = S.wish.image.mkString,
+                     onChange = handleImageChange)()
 
       val editingContent = <.div(
         ^.cls := "WishCard-Content clearfix",
@@ -92,6 +118,10 @@ object WishCard {
         <.div(
           ^.cls := "WishCard-Content-Description",
           titleEditField,
+          imageEditField
+        ),
+        <.div(
+          ^.cls := "WishCard-Content-Description",
           descriptionEditField
         )
       )
@@ -119,11 +149,11 @@ object WishCard {
                         props.onFinishedUpdate(
                           S.wish
                       ))(),
-        MuiFlatButton(
-          key = "Cancel",
-          label = "Cancel",
-          secondary = true,
-          onClick = (rh: ReactEventH) => Callback.info(s"cancel edit: $rh"))()
+        MuiFlatButton(key = "Cancel",
+                      label = "Cancel",
+                      secondary = true,
+                      onClick = (rh: ReactEventH) =>
+                        props.onFinishedUpdate(props.startingState))()
       )
 
       println(s"Adding wish number ${props.index} with text ${S.wish.heading}")

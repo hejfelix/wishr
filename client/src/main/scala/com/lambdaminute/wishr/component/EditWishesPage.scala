@@ -1,7 +1,12 @@
 package com.lambdaminute.wishr.component
 
 import derive.key
-import japgolly.scalajs.react.{BackendScope, Callback, ReactComponentB, ReactNode}
+import japgolly.scalajs.react.{
+  BackendScope,
+  Callback,
+  ReactComponentB,
+  ReactNode
+}
 
 import scala.scalajs
 import scala.scalajs.js
@@ -45,7 +50,16 @@ object EditWishesPage {
           .dropWhile(_ != from)
           .drop(1)))
 
-  def addWish(w: Wish)(s: State): State = s.copy(wishes = w :: s.wishes)
+  def addWish(w: Wish, inEditMode: Boolean = false)(s: State): State =
+    if (inEditMode)
+      s.copy(
+        wishes = w :: s.wishes,
+        editingWishes = w :: s.editingWishes
+      )
+    else
+      s.copy(
+        wishes = w :: s.wishes
+      )
 
   class Backend($ : BackendScope[Props, State]) {
 
@@ -59,7 +73,7 @@ object EditWishesPage {
     val close: Callback = $.modState(s => s.copy(deleteDialogIsOpen = false))
 
     def handleAddWish: ReactEventH => Callback =
-      e => $.modState(addWish(Wish("New Wish", "Description", None)))
+      e => $.modState(addWish(Wish("New Wish", "Description", None), true))
 
     def handleDialogCancel: ReactEventH => Callback =
       e => close >> Callback.info("Cancel Clicked")
@@ -78,8 +92,12 @@ object EditWishesPage {
       $.modState(s => s.copy(editingWishes = w :: s.editingWishes))
 
     def stopEditingAndUpdate(w: Wish): Callback =
-      $.modState(s =>
-        s.copy(editingWishes = dropFirstMatch(s.editingWishes, w)))
+      $.modState(s => {
+        val newEditing = dropFirstMatch(s.editingWishes, w)
+        println(
+          s"editing before ${s.editingWishes.map(_.heading)},  now: ${newEditing}")
+        s.copy(editingWishes = newEditing)
+      })
 
     def render(S: State, P: Props) = {
 
@@ -102,8 +120,9 @@ object EditWishesPage {
               S.editingWishes.contains(w),
               startEditing(w),
               newWish =>
-                $.modState(changeWish(w, newWish)) >> Callback.info(
-                  s"Changed state from $w to $newWish")
+                stopEditingAndUpdate(w) >>
+                  $.modState(changeWish(w, newWish)) >> Callback.info(
+                  s"Changed state from $w to $newWish. ${S.editingWishes}")
             )
         }
 
@@ -125,18 +144,6 @@ object EditWishesPage {
 
       lazy val title = <.h2(s"Welcome to the wish list of ${P.owner}")(
         ^.cls := "edit-page-title")
-
-//      object AddButtonStyle extends StyleSheet.Inline {
-//
-//        import dsl._
-//
-//        val container = style(maxWidth(1024 px))
-//
-//        val content = style(display.flex,
-//                            padding(30.px),
-//                            flexDirection.column,
-//                            alignItems.center)
-//      }
 
       lazy val addWishButton =
         MuiFloatingActionButton(key = "floating1",
