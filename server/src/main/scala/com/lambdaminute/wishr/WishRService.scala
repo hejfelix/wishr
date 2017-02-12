@@ -64,7 +64,6 @@ case class WishRService(persistence: Persistence) extends CirceInstances {
 //      NotFound()
   }
 
-  override protected def defaultPrinter: Printer =
-    io.circe.Printer(preserveOrder = true, true, "  ")
+  override protected def defaultPrinter: Printer = Printer.spaces2
 
 }
