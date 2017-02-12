@@ -10,18 +10,18 @@
 
 
   <body>
-    <script type="text/javascript" src="./assets/index-bundle.js"></script>
-    <script type="text/javascript" src="./assets/material_ui-bundle.js"></script>
+    <script type="text/javascript" src="assets/index-bundle.js"></script>
+    <script type="text/javascript" src="assets/material_ui-bundle.js"></script>
 
     <!-- Include Scala.js compiled code -->
-    <script type="text/javascript" src="./client/target/scala-2.11/client-fastopt.js"></script>
+    <script type="text/javascript" src="client/target/scala-2.11/client-fastopt.js"></script>
     <!-- Run com.lambdaminute.wishr.TutorialApp -->
 
 
     <div id="wishr-app"></div>
     <script type="text/javascript">
       console.log(CSSTransitionGroup);
-      
+
   	// console.log("Injecting tapEventPlugin...");
   	// window.injectTapEventPlugin();
       com.lambdaminute.wishr.WishRRootComponent().main();
