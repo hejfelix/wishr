@@ -1,56 +1,19 @@
 package com.lambdaminute.wishr
 
 import chandu0101.scalajs.react.components.materialui._
-import com.lambdaminute.wishr.component.UserCard.{Backend, State}
-import com.lambdaminute.wishr.component.WishCard.{Backend, Props, State}
-import com.lambdaminute.wishr.component.{EditWishesPage, UserCard, WishCard}
-import com.lambdaminute.wishr.model.{Wish, WishList}
-import com.sun.org.apache.xpath.internal.operations.Bool
-import japgolly.scalajs.react
+import com.lambdaminute.wishr.component.EditWishesPage
+import com.lambdaminute.wishr.model.WishList
 import japgolly.scalajs.react.Addons.ReactCssTransitionGroup
-import japgolly.scalajs.react.ReactComponentC.BaseCtor
 import japgolly.scalajs.react.vdom.prefix_<^._
-import japgolly.scalajs.react.{
-  BackendScope,
-  Callback,
-  ReactComponentB,
-  ReactComponentC,
-  ReactComponentU,
-  ReactDOM,
-  TopNode
-}
+import japgolly.scalajs.react.{BackendScope, ReactComponentB, ReactDOM}
 import org.scalajs.dom.document
-import upickle.default._
+//import upickle.default._
 
 import scala.scalajs.js.JSApp
-import org.scalajs.core.tools.io.IO
 
-import scalaz.Alpha.S
+import serialization.OptionPickler._
 
 object WishRRootComponent extends JSApp {
-
-  val testString =
-    """|{
-       |  "owner" : "Felix Palludan Hargreaves",
-       |  "password":"34c91db1b0b0ab048507cb3592ae700b",
-       |  "wishes":[
-       |    {
-       |      "heading":"Stol",
-       |      "desc":"Det er den fedeste stol ever",
-       |      "image": ["http://images.crateandbarrel.com/is/image/Crate/GiaChairTealSHF15_16x9/$web_zoom_furn_hero$/150617162035/gia-chair.jpg"]
-       |    },
-       |    {
-       |      "heading": "Bord",
-       |      "desc": "Det er det fedeste bord ever",
-       |      "image": []
-       |    },
-       |    {
-       |      "heading":"TV",
-       |      "desc":"Det er det fedeste TV",
-       |      "image": []
-       |    }
-       |  ]
-       |}""".stripMargin
 
   def main(): Unit = {
     var i = 1
@@ -82,7 +45,7 @@ object WishRRootComponent extends JSApp {
 
     val theme: MuiTheme = Mui.Styles.getMuiTheme(Mui.Styles.LightRawTheme)
 
-    def wishes: WishList = read[WishList](testString)
+    def wishes: WishList = read[WishList](WishList.testString)
 
     val editWishesPage =
       ReactComponentB[EditWishesPage.Props]("UserCard")
