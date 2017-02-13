@@ -22,6 +22,10 @@ case class WishRService(persistence: Persistence) extends CirceInstances {
 
   def service = HttpService {
 
+    case request @ (GET -> Root) =>
+      println("Serving index.html")
+      serveFile("./index.html", request)
+
     case GET -> Root / user / "entries" =>
       val entries = persistence.getEntriesFor(user)
 
@@ -43,24 +47,11 @@ case class WishRService(persistence: Persistence) extends CirceInstances {
       val addResult: String = persistence.set(entries)
       Ok(addResult)
 
-    case request @ GET -> Root / filename
-        if filename.endsWith(".html") || filename.endsWith(".css") || filename
-          .endsWith(".js") =>
-      println(s"Got request for $filename")
-      serveFile(filename, request)
-
-    case request @ GET -> Root / "client" / "target" / "scala-2.11" / "client-fastopt.js" =>
-      println("Got request for client/target/scala-2.11/client-fastopt.js")
-      serveFile("./client/target/scala-2.11/client-fastopt.js",request)
-
-    case request @ GET -> Root / "assets" / jsFile if jsFile.endsWith(".js") =>
-      println(s"request for ./assets/$jsFile")
-      serveFile(s"assets/$jsFile",request)
-
-    case request =>
-      println(s"Got unknown request: ${request.pathInfo}")
-      println(request.pathTranslated)
-      serveFile(request.pathInfo,request)
+    case request
+        if request.method == GET && List(".css", ".html", ".js").exists(
+          request.pathInfo.endsWith) =>
+      println(s"Got static file request: ${request.pathInfo}")
+      serveFile("."+request.pathInfo, request)
 //      NotFound()
   }
 
