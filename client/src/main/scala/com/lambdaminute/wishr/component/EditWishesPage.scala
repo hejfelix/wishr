@@ -18,10 +18,16 @@ import com.lambdaminute.wishr.model.{Wish, WishList}
 import japgolly.scalajs.react.Addons.ReactCssTransitionGroup
 import Mui.SvgIcons.ImageControlPoint
 import com.lambdaminute.wishr.component.WishCard.{Backend, Props, State}
+import com.lambdaminute.wishr.serialization
 import japgolly.scalajs.react.ReactComponentC.DefaultProps
+import org.scalajs.dom
+import org.scalajs.dom.ext.Ajax
 
 import scalacss.mutable.StyleSheet
+import serialization.OptionPickler._
 
+import concurrent.ExecutionContext.Implicits.global
+import scala.util.{Failure, Success}
 object EditWishesPage {
 
   case class Props(owner: String)
@@ -31,18 +37,11 @@ object EditWishesPage {
                    wishes: List[Wish],
                    selectedWish: Option[Wish],
                    editingWishes: List[Wish],
-                   theme: MuiTheme)
+                   theme: MuiTheme,
+                   snackBarOpen: Boolean = false)
 
   def dropFirstMatch[T](l: List[T], t: T) =
     l.takeWhile(_ != t) ++ l.dropWhile(_ != t).drop(1)
-
-  def removeSelectedAndClose(s: State): State =
-    s.selectedWish match {
-      case Some(w) =>
-        s.copy(deleteDialogIsOpen = false,
-               wishes = dropFirstMatch(s.wishes, w))
-      case None => s
-    }
 
   def changeWish(from: Wish, to: Wish)(state: State): State =
     state.copy(
@@ -50,18 +49,49 @@ object EditWishesPage {
           .dropWhile(_ != from)
           .drop(1)))
 
-  def addWish(w: Wish, inEditMode: Boolean = false)(s: State): State =
-    if (inEditMode)
-      s.copy(
-        wishes = w :: s.wishes,
-        editingWishes = w :: s.editingWishes
-      )
-    else
-      s.copy(
-        wishes = w :: s.wishes
-      )
-
   class Backend($ : BackendScope[Props, State]) {
+
+    val closeSnackBar = $.modState(_.copy(snackBarOpen = false))
+    val openSnackBar = $.modState(_.copy(snackBarOpen = true))
+
+    val closeRequested: String => Callback =
+      reason => closeSnackBar >> Callback.info(s"onRequestClose: $reason")
+
+    def persist(state: State): State = {
+      Ajax
+        .post(s"http://127.0.0.1:8080/${state.user}/set",
+              write[List[Wish]](state.wishes),
+              headers = Map("Content-Type" -> "application/json"))
+        .map(_.responseText)
+        .onComplete {
+          case Success(msg) =>
+            println(s"Succesfully persisted state: $msg")
+            openSnackBar.runNow()
+          case Failure(err) => println(s"Error persisting state: $err")
+        }
+      state
+    }
+    def removeSelectedAndClose(s: State): State =
+      s.selectedWish match {
+        case Some(w) =>
+          persist(
+            s.copy(deleteDialogIsOpen = false,
+                   wishes = dropFirstMatch(s.wishes, w)))
+        case None => s
+      }
+    def addWish(w: Wish, inEditMode: Boolean = false)(s: State): State =
+      if (s.wishes.contains(w))
+        s
+      else if (inEditMode)
+        persist(
+          s.copy(
+            wishes = w :: s.wishes,
+            editingWishes = w :: s.editingWishes
+          ))
+      else
+        s.copy(
+          wishes = w :: s.wishes
+        )
 
     def openAndSelect(w: Wish): Callback =
       $.modState(s =>
@@ -96,7 +126,7 @@ object EditWishesPage {
         val newEditing = dropFirstMatch(s.editingWishes, w)
         println(
           s"editing before ${s.editingWishes.map(_.heading)},  now: ${newEditing}")
-        s.copy(editingWishes = newEditing)
+        persist(s.copy(editingWishes = newEditing))
       })
 
     def render(S: State, P: Props) = {
@@ -152,8 +182,15 @@ object EditWishesPage {
           ImageControlPoint(
             )())
 
+      val snackBar = MuiSnackbar(
+        autoHideDuration = 2500,
+        message = "Wish list updated",
+        onRequestClose = closeRequested,
+        open = S.snackBarOpen
+      )()
+
       MuiMuiThemeProvider(muiTheme = S.theme)(
-        <.div(addWishButton, <.div(title, deleteDialog, wishCards)))
+        <.div(addWishButton, snackBar, <.div(title, deleteDialog, wishCards)))
     }
   }
 

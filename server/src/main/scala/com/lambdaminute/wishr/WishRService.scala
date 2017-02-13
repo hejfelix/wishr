@@ -36,13 +36,15 @@ case class WishRService(persistence: Persistence) extends CirceInstances {
 
       Ok(wishes)(jsonEncoderOf[List[Wish]])
 
-    case request @ (POST -> Root / "set") =>
-      val wishes: WishList = request.as(jsonOf[WishList]).unsafeRun()
+    case request @ (POST -> Root / user / "set") =>
+      val wishes: List[Wish] = request.as(jsonOf[List[Wish]]).unsafeRun()
 
-      val entries = wishes.wishes.map {
+      val entries = wishes.map {
         case Wish(heading, desc, image) =>
-          WishEntry(wishes.owner, heading, desc, image)
+          WishEntry(user, heading, desc, image)
       }
+
+      println(s"Setting wishes for $user: ${wishes.mkString}" )
 
       val addResult: String = persistence.set(entries)
       Ok(addResult)
@@ -51,8 +53,7 @@ case class WishRService(persistence: Persistence) extends CirceInstances {
         if request.method == GET && List(".css", ".html", ".js").exists(
           request.pathInfo.endsWith) =>
       println(s"Got static file request: ${request.pathInfo}")
-      serveFile("."+request.pathInfo, request)
-//      NotFound()
+      serveFile("." + request.pathInfo, request)
   }
 
   override protected def defaultPrinter: Printer = Printer.spaces2
