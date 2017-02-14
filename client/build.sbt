@@ -1,4 +1,8 @@
+scalaVersion := "2.11.8"
+
 enablePlugins(ScalaJSPlugin)
+
+
 
 libraryDependencies += "be.doeraene" %%% "scalajs-jquery" % "0.9.1"
 
@@ -6,37 +10,45 @@ libraryDependencies += "be.doeraene" %%% "scalajs-jquery" % "0.9.1"
 //libraryDependencies += "com.github.japgolly.scalajs-react" %%% "core" % "0.11.3"
 
 libraryDependencies ++= Seq(
-                             "com.github.japgolly.scalajs-react" %%% "core" % "0.11.3",
-                             "com.github.japgolly.scalajs-react" %%% "extra" % "0.11.3"
+                             "com.github.japgolly.scalajs-react" %%% "core" % "0.11.1",
+                             "com.github.japgolly.scalajs-react" %%% "extra" % "0.11.1",
+                             "com.github.chandu0101.scalajs-react-components" %%% "core" % "0.5.0"
                            )
 
-libraryDependencies += "com.github.chandu0101.scalajs-react-components" % "core_sjs0.6_2.11" % "0.5.0"
+//libraryDependencies ++= Seq(
+//                             "com.github.japgolly.scalajs-react" %%% "core" % "0.11.3",
+//                             "com.github.japgolly.scalajs-react" %%% "extra" % "0.11.3"
+//                           )
 
-libraryDependencies += "com.lihaoyi" %%% "upickle" % "0.4.3"
+//libraryDependencies += "com.github.chandu0101.scalajs-react-components" %%% "core_sjs0.6" % "0.5.0"
 
-libraryDependencies += "org.scala-js" % "scalajs-tools_2.11" % "0.6.14"
+libraryDependencies += "com.lihaoyi" %% "upickle_sjs0.6" % "0.4.4"
 
 
-// React JS itself (Note the filenames, adjust as needed, eg. to remove addons.)
-jsDependencies ++= Seq(
+libraryDependencies += "org.scala-js" %% "scalajs-tools" % "0.6.14"
 
-                        "org.webjars.bower" % "react" % "15.3.2"
-                        /        "react-with-addons.js"
-                        minified "react-with-addons.min.js"
-                        commonJSName "React",
+libraryDependencies += "org.reactormonk" %% "cryptobits" % "1.1"
 
-                        "org.webjars.bower" % "react" % "15.3.2"
-                        /         "react-dom.js"
-                        minified  "react-dom.min.js"
-                        dependsOn "react-with-addons.js"
-                        commonJSName "ReactDOM",
+//// React JS itself (Note the filenames, adjust as needed, eg. to remove addons.)
+//jsDependencies ++= Seq(
+//
+//                        "org.webjars.bower" % "react" % "15.3.2"
+//                        /        "react-with-addons.js"
+//                        minified "react-with-addons.min.js"
+//                        commonJSName "React",
+//
+//                        "org.webjars.bower" % "react" % "15.3.2"
+//                        /         "react-dom.js"
+//                        minified  "react-dom.min.js"
+//                        dependsOn "react-with-addons.js"
+//                        commonJSName "ReactDOM",
+//
+//                        "org.webjars.bower" % "react" % "15.3.2"
+//                        /         "react-dom-server.js"
+//                        minified  "react-dom-server.min.js"
+//                        dependsOn "react-dom.js"
+//                        commonJSName "ReactDOMServer")
 
-                        "org.webjars.bower" % "react" % "15.3.2"
-                        /         "react-dom-server.js"
-                        minified  "react-dom-server.min.js"
-                        dependsOn "react-dom.js"
-                        commonJSName "ReactDOMServer")
-
-skip in packageJSDependencies := false
-jsDependencies +=
-"org.webjars" % "jquery" % "2.1.4" / "2.1.4/jquery.js"
+//skip in packageJSDependencies := false
+//jsDependencies +=
+//"org.webjars" % "jquery" % "2.1.4" / "2.1.4/jquery.js"
