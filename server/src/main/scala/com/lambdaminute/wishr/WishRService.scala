@@ -2,16 +2,25 @@ package com.lambdaminute
 
 import java.io.File
 
+import cats.arrow.Choice
 import cats.data.Kleisli
 import com.lambdaminute.wishr.model.{User, Wish, WishEntry}
 import com.lambdaminute.wishr.persistence.Persistence
 import fs2.Task
-import io.circe.Printer
+import io.circe.{Encoder, Printer}
 import io.circe.generic.auto._
-import org.http4s._
 import org.http4s.circe.CirceInstances
-import org.http4s.dsl._
 import org.http4s.server.AuthMiddleware
+import org.http4s._
+// import org.http4s._
+import fs2.interop.cats._
+
+import org.http4s.dsl._
+// import org.http4s.dsl._
+
+import cats.implicits._
+
+import org.http4s.server._
 
 case class WishRService(persistence: Persistence) extends CirceInstances {
 
@@ -23,21 +32,54 @@ case class WishRService(persistence: Persistence) extends CirceInstances {
       .map(Task.now) // This one is require to make the types match up
       .getOrElse(NotFound()) // In case the file doesn't exist
 
-  //Authenticate the user
-  def authUser: Service[Request, User] = Kleisli(_ => Task.delay(???))
+  implicit def eitherEncoder[T: Encoder, U: Encoder]: EntityEncoder[Either[T, U]] =
+    jsonEncoderOf[Either[T, U]]
 
-  def middleware = AuthMiddleware(authUser)
+  //Authenticate the user
+  val authUser: Kleisli[Task, Request, Either[String, User]] = Kleisli(
+    req =>
+      if (req.pathInfo.contains("pass")) {
+        println("Got PASS request...")
+        Task.now(Right(User(42, "Valid User")))
+      } else
+        Task.now(Left("Bad Credentials"))
+  )
+
+  val onAuthFailure: AuthedService[String] = Kleisli(req => Forbidden(req.authInfo))
 
   val authedService: AuthedService[User] =
     AuthedService {
-      case GET -> Root / "welcome" as user => Ok(s"Welcome, ${user.name}")
+      case GET -> Root / "pass" / "welcome" as user => Ok(s"Welcome, ${user}")
     }
 
-  def basicAuthService: Kleisli[Task, Request, MaybeResponse] =
-    middleware(authedService)
+  implicit def serviceChoice: Choice[Service] = new Choice[Service] {
+    override def choice[A, B, C](f: Service[A, C], g: Service[B, C]): Service[Either[A, B], C] = Kleisli(
+      (a: Either[A, B]) =>
+        a match {
+          case Right(r) => g(r)
+          case Left(l)  => f(l)
+      }
+    )
+    override def id[A]: Service[A, A] = Kleisli[Task, A, A](Task.now)
+    override def compose[A, B, C](f: Service[B, C], g: Service[A, B]): Service[A, C] =
+      Kleisli((r: A) => g(r).flatMap(x => f(x)))
+  }
 
-  import org.http4s.server.syntax._
-  def service = noAuthService orElse basicAuthService
+  def authWithFailure[Err, T](authUser: Service[Request, Either[Err, T]],
+                              onFailure: Service[AuthedRequest[Err], MaybeResponse]): AuthMiddleware[T] = {
+    service: Service[AuthedRequest[T], MaybeResponse] =>
+      Choice[Service]
+        .choice(onFailure, service)
+        .local({ authed: AuthedRequest[Either[Err, T]] =>
+          authed.authInfo.bimap(err => AuthedRequest(err, authed.req), suc => AuthedRequest(suc, authed.req))
+        })
+        .compose(AuthedRequest(authUser.run))
+  }
+  def middleware: AuthMiddleware[User] = authWithFailure(authUser, onAuthFailure)
+
+  def basicAuthService: Service[Request, MaybeResponse] = middleware(authedService)
+
+//  def service = noAuthService
 
   def noAuthService: Kleisli[Task, Request, MaybeResponse] = HttpService {
 
@@ -68,9 +110,7 @@ case class WishRService(persistence: Persistence) extends CirceInstances {
       val addResult: String = persistence.set(entries)
       Ok(addResult)
 
-    case request
-        if request.method == GET && List(".css", ".html", ".js").exists(
-          request.pathInfo.endsWith) =>
+    case request if request.method == GET && List(".css", ".html", ".js", ".ico").exists(request.pathInfo.endsWith) =>
       println(s"Got static file request: ${request.pathInfo}")
       serveFile("." + request.pathInfo, request)
   }

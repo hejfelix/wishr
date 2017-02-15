@@ -24,7 +24,7 @@ object WishRApplication extends ServerApp {
       wishrService =>
         BlazeBuilder
           .bindHttp(8080, "localhost")
-          .mountService(wishrService.service, "/")
+          .mountService(wishrService.basicAuthService, "/")
           .start)
 
 }
