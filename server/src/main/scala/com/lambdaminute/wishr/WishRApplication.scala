@@ -15,7 +15,7 @@ object WishRApplication extends ServerApp {
     persistenceModule.fromConfig.run(PersistenceConfig("someUser", "somePassword"))
 
   val serviceTask = persistence match {
-    case Right(persistence) => Task.now(WishRService(persistence))
+    case Right(persistence) => Task.now(WishRService(persistence, WishRAuthentication(persistence)))
     case Left(err)          => Task.fail(new Exception(err))
   }
 
