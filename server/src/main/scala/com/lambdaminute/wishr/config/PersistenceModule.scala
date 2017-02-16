@@ -8,7 +8,7 @@ import scala.util.Either
 
 class PersistenceModule {
 
-  def fromConfig: Kleisli[ModuleOr, PersistenceConfig, Persistence] =
+  def fromConfig[Error, Secret]: Kleisli[ModuleOr, PersistenceConfig[Error, Secret], Persistence[Error, Secret]] =
     Kleisli(_.persistence)
 
 }

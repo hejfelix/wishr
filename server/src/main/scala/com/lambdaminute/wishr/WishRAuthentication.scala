@@ -12,8 +12,12 @@ import org.http4s.dsl._
 import org.http4s.server.AuthMiddleware
 import io.circe.generic.auto._
 import fs2.interop.cats._
+import org.http4s.headers
+import org.http4s.headers.Authorization
+import org.http4s.util.CaseInsensitiveString
 
-case class WishRAuthentication(persistence: Persistence) extends CirceInstances {
+case class WishRAuthentication(persistence: Persistence[String, String])
+    extends CirceInstances {
 
   override protected def defaultPrinter: Printer = Printer.spaces2
   import cats._
@@ -24,15 +28,24 @@ case class WishRAuthentication(persistence: Persistence) extends CirceInstances 
 
   //Authenticate the user
   val authUser: Kleisli[Task, Request, Either[String, User]] = Kleisli(
-    _.as(jsonOf[LoginRequest])
+    request => {
+      if (request.method == POST && request.pathInfo == "/login")
+        handleLogin(request)
+      else
+        Task.now(for {
+          secret   <- request.headers.get(Authorization).map(_.value).toRight("No auth header found")
+          username <- persistence.getUserFor(secret)
+        } yield User(username, secret))
+    }
+  )
+
+  private def handleLogin(request: Request): Task[Either[String, User]] =
+    request
+      .as(jsonOf[LoginRequest])
       .map {
         case LoginRequest(user, password) =>
           persistence.logIn(user, password).map(secret => User(user, secret))
       }
-      .map {
-        _.toRight("Bad Credentials"): Either[String, User] //Scalac thinks it's serializable etc...
-      }
-  )
 
   val onAuthFailure: AuthedService[String] = Kleisli(req => Forbidden(req.authInfo))
 
