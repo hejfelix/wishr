@@ -1,11 +1,17 @@
 package com.lambdaminute.wishr.persistence
 
 import com.lambdaminute.wishr.model.WishEntry
-import fs2.Task
 
-trait Persistence {
+trait Persistence[Error,Secret] {
 
-  def getEntriesFor(user: String): List[WishEntry]
-  def set(entries: List[WishEntry]): String
+  def logIn(user: String, hash: String): Either[Error, String]
+
+  def getSecretFor(user: String): Either[Error, Secret]
+
+  def getUserFor(secret: String): Either[Error, String]
+
+  def getEntriesFor(user: String): Either[Error, List[WishEntry]]
+
+  def set(entries: List[WishEntry]): Either[Error, String]
 
 }

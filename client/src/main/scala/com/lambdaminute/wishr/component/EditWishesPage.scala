@@ -25,7 +25,14 @@ import concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
 object EditWishesPage {
 
-  case class Props(owner: String)
+  def apply(user: String, wishes: List[Wish], theme: MuiTheme, secret: String) =
+    ReactComponentB[EditWishesPage.Props]("UserCard")
+      .initialState(EditWishesPage
+        .State(false, user, wishes, None, Nil, theme))
+      .renderBackend[EditWishesPage.Backend]
+      .propsDefault(EditWishesPage.Props(user, secret))
+
+  case class Props(owner: String, secret: String)
 
   case class State(deleteDialogIsOpen: Boolean,
                    user: String,
@@ -48,9 +55,9 @@ object EditWishesPage {
 
     def persist(state: State): State = {
       Ajax
-        .post(s"./${state.user}/set",
+        .post(s"./set",
               write[List[Wish]](state.wishes),
-              headers = Map("Content-Type" -> "application/json"))
+              headers = Map("Content-Type" -> "application/json", "Authorization" -> $.props.runNow().secret))
         .map(_.responseText)
         .onComplete {
           case Success(msg) =>
@@ -171,7 +178,8 @@ object EditWishesPage {
         open = S.snackBarOpen
       )()
 
-      MuiMuiThemeProvider(muiTheme = S.theme)(<.div(addWishButton, snackBar, <.div(title, deleteDialog, wishCards)))
+      MuiMuiThemeProvider(muiTheme = S.theme)(
+        <.div(_react_fragReactNode(addWishButton), snackBar, <.div(title, deleteDialog, wishCards)))
     }
   }
 
