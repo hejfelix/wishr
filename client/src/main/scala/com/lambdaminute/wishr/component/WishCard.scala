@@ -107,7 +107,7 @@ object WishCard {
                      defaultValue = S.wish.desc,
                      onChange = handleDescriptionChange)()
 
-      val imageEditField =
+      val imageEditField: ReactComponentU_ =
         MuiTextField(floatingLabelText = "Image URL",
                      defaultValue = S.wish.image.mkString,
                      onChange = handleImageChange)()
@@ -117,7 +117,7 @@ object WishCard {
         <.div(^.cls := "WishCard-Content-Image", createImage(S.wish.image)),
         <.div(
           ^.cls := "WishCard-Content-Description",
-          titleEditField,
+          _react_fragReactNode(titleEditField),
           imageEditField
         ),
         <.div(

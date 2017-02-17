@@ -1,7 +1,7 @@
 package com.lambdaminute.wishr
 
 import chandu0101.scalajs.react.components.materialui._
-import com.lambdaminute.wishr.component.EditWishesPage
+import com.lambdaminute.wishr.component.{EditWishesPage, LoginPage, WishRAppContainer}
 import com.lambdaminute.wishr.model.{Wish, WishList}
 import japgolly.scalajs.react.Addons.ReactCssTransitionGroup
 import japgolly.scalajs.react.vdom.prefix_<^._
@@ -32,24 +32,8 @@ object WishRRootComponent extends JSApp {
 
   def main(): Unit = {
 
-    println(s"Fetching wishes for $user...")
-    Ajax.get(s"./$user/entries", headers = Map("Content-Type" -> "application/json")).foreach { xhr =>
-      val theme: MuiTheme = Mui.Styles.getMuiTheme(Mui.Styles.LightRawTheme)
-
-      def wishes = read[List[Wish]](xhr.responseText)
-
-      val editWishesPage =
-        ReactComponentB[EditWishesPage.Props]("UserCard")
-          .initialState(EditWishesPage
-            .State(false, user, wishes, None, Nil, theme))
-          .renderBackend[EditWishesPage.Backend]
-          .propsDefault(EditWishesPage.Props(user))
-          .build()
-
-      val domRoot = document.getElementById("wishr-app")
-      ReactDOM.render(editWishesPage, domRoot)
-
-    }
+    val domRoot = document.getElementById("wishr-app")
+    ReactDOM.render(WishRAppContainer().build(), domRoot)
 
   }
 

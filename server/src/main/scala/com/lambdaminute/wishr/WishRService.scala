@@ -2,25 +2,17 @@ package com.lambdaminute
 
 import java.io.File
 
-import cats.arrow.Choice
-import cats.data.Kleisli
 import com.lambdaminute.wishr.WishRAuthentication
-import com.lambdaminute.wishr.model.{LoginRequest, User, Wish, WishEntry}
+import com.lambdaminute.wishr.model.{User, Wish, WishEntry}
 import com.lambdaminute.wishr.persistence.Persistence
 import fs2.Task
-import io.circe.{Encoder, Printer}
+import io.circe.Printer
 import io.circe.generic.auto._
-import org.http4s.circe.CirceInstances
-import org.http4s.server.AuthMiddleware
 import org.http4s._
-import fs2.interop.cats._
-
+import org.http4s.circe.CirceInstances
 import org.http4s.dsl._
-
-import cats.implicits._
-import cats._
-
 import org.http4s.server.syntax._
+
 
 case class WishRService(persistence: Persistence[String, String], authentication: WishRAuthentication)
     extends CirceInstances {
@@ -49,12 +41,16 @@ case class WishRService(persistence: Persistence[String, String], authentication
     case GET -> Root / "entries" as user =>
       val entries: Either[String, List[WishEntry]] = persistence.getEntriesFor(user.name)
 
+      println(s"Getting entries for ${user.name}")
+
       val wishes: Either[String, List[Wish]] = entries.map {
         case actualEntries =>
           actualEntries.map {
             case WishEntry(_, heading, desc, image) => Wish(heading, desc, image)
           }
       }
+
+      println(s"Found wishes $wishes")
 
       wishes match {
         case Right(wishes) => Ok(wishes)(jsonEncoderOf[List[Wish]])
