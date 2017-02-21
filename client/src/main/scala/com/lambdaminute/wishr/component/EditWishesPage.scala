@@ -16,7 +16,7 @@ import com.lambdaminute.wishr.component.WishCard.{Backend, Props, State}
 import com.lambdaminute.wishr.serialization
 import japgolly.scalajs.react.ReactComponentC.DefaultProps
 import org.scalajs.dom
-import org.scalajs.dom.ext.Ajax
+import org.scalajs.dom.ext.{Ajax, AjaxException}
 
 import scalacss.mutable.StyleSheet
 import serialization.OptionPickler._
@@ -40,15 +40,16 @@ object EditWishesPage {
                    selectedWish: Option[Wish],
                    editingWishes: List[Wish],
                    theme: MuiTheme,
-                   snackBarOpen: Boolean = false)
+                   snackBarOpen: Boolean = false,
+                   snackBarText: String = "Wish list updated")
 
   def dropFirstMatch[T](l: List[T], t: T) =
     l.takeWhile(_ != t) ++ l.dropWhile(_ != t).drop(1)
 
   class Backend($ : BackendScope[Props, State]) {
 
-    val closeSnackBar = $.modState(_.copy(snackBarOpen = false))
-    val openSnackBar  = $.modState(_.copy(snackBarOpen = true))
+    val closeSnackBar              = $.modState(_.copy(snackBarOpen = false))
+    def openSnackBar(text: String) = $.modState(_.copy(snackBarOpen = true, snackBarText = text))
 
     val closeRequested: String => Callback =
       reason => closeSnackBar >> Callback.info(s"onRequestClose: $reason")
@@ -58,13 +59,21 @@ object EditWishesPage {
         .post(s"./set",
               write[List[Wish]](state.wishes),
               headers = Map("Content-Type" -> "application/json", "Authorization" -> $.props.runNow().secret))
-        .map(_.responseText)
         .onComplete {
           case Success(msg) =>
-            println(s"Succesfully persisted state: $msg")
-            openSnackBar.runNow()
-          case Failure(err) => println(s"Error persisting state: $err")
+            val snackText = s"Succesfully persisted state"
+            println(snackText)
+            openSnackBar(snackText).runNow()
+          case Failure(AjaxException(xhr)) =>
+            val snackText = s"Error persisting state ${xhr.responseType}: ${xhr.responseText}"
+            println(snackText)
+            openSnackBar(snackText).runNow()
+          case Failure(err) =>
+            val snackText = s"Error persisting state ${err}: ${err.getMessage()}"
+            println(snackText)
+            openSnackBar(snackText).runNow()
         }
+
       state
     }
 
@@ -173,7 +182,7 @@ object EditWishesPage {
 
       val snackBar = MuiSnackbar(
         autoHideDuration = 2500,
-        message = "Wish list updated",
+        message = S.snackBarText,
         onRequestClose = closeRequested,
         open = S.snackBarOpen
       )()

@@ -1,13 +1,6 @@
 package com.lambdaminute.wishr.component
 
-import chandu0101.scalajs.react.components.materialui.{
-  Mui,
-  MuiFlatButton,
-  MuiMuiThemeProvider,
-  MuiPaper,
-  MuiTheme,
-  ZDepth
-}
+import chandu0101.scalajs.react.components.materialui.{Mui, MuiFlatButton, MuiMuiThemeProvider, MuiPaper, MuiTheme, ZDepth}
 import com.lambdaminute.wishr.component.LoginPage.Props
 import com.lambdaminute.wishr.model.{User, Wish}
 import com.lambdaminute.wishr.serialization.OptionPickler.read
@@ -28,13 +21,15 @@ object WishRAppContainer {
   case object Login    extends Page
   case object Fetching extends Page
   case object WishList extends Page
+  case object CreateUser extends Page
+
 
   def apply() =
     ReactComponentB[Unit]("WishRAppContainer")
       .initialState(WishRAppContainer.State())
       .renderBackend[WishRAppContainer.Backend]
 
-  case class State(currentPage: Page = Login,
+  case class State(currentPage: Page = CreateUser,
                    userName: Option[String] = None,
                    authorizationSecret: Option[String] = None,
                    theme: MuiTheme = Mui.Styles.getMuiTheme(Mui.Styles.LightRawTheme),
@@ -67,6 +62,7 @@ object WishRAppContainer {
           }
 
       val page: ReactElement = S.currentPage match {
+        case CreateUser =>  CreateUserPage().build()
         case Login => LoginPage(handleLogin).build()
         case Fetching =>
           fetchWishes

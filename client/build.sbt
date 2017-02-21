@@ -2,7 +2,7 @@ scalaVersion := "2.11.8"
 
 enablePlugins(ScalaJSPlugin)
 
-
+libraryDependencies += "org.typelevel" %%% "cats" % "0.9.0"
 
 libraryDependencies += "be.doeraene" %%% "scalajs-jquery" % "0.9.1"
 

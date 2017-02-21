@@ -64,7 +64,7 @@ object LoginPage {
       val passwordField: ReactComponentU_ =
         MuiTextField(hintText = "password", `type` = "password", onChange = handlePasswordChange)()
       val loginButton = MuiFlatButton(label = "login", onClick = handleLoginButton)()
-      <.div(<.div(userNameField), <.div(passwordField), loginButton)
+      <.div(MuiPaper()(<.div(userNameField), <.div(passwordField), loginButton))
     }
 
   }
