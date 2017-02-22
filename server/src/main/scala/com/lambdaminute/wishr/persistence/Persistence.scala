@@ -1,6 +1,6 @@
 package com.lambdaminute.wishr.persistence
 
-import com.lambdaminute.wishr.model.WishEntry
+import com.lambdaminute.wishr.model.{CreateUserRequest, WishEntry}
 
 trait Persistence[Error,Secret] {
 
@@ -14,4 +14,7 @@ trait Persistence[Error,Secret] {
 
   def set(entries: List[WishEntry]): Either[Error, String]
 
+  def finalize(registrationToken: String): Either[Error, String]
+
+  def createUser(createUserRequest: CreateUserRequest, activationToken: String): Either[Error, String]
 }

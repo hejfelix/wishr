@@ -1,14 +1,22 @@
 package com.lambdaminute.wishr.persistence
-import com.lambdaminute.wishr.model.{UserSecret, WishEntry}
+import com.lambdaminute.wishr.model.{CreateUserRequest, UserSecret, WishEntry}
 import com.github.t3hnar.bcrypt._
 import java.time.Instant
 import java.time.temporal.{ChronoUnit, Temporal, TemporalAmount}
 
 case class WeakPersistence() extends Persistence[String, String] {
 
+  case class DBUser(firstName: String,
+                    lastName: String,
+                    email: String,
+                    hashedPassword: String,
+                    registrationToken: String,
+                    finalized: Boolean)
+
   var db: List[WishEntry]                = Nil
   var userSecrets: List[UserSecret]      = Nil
   var hashPasswords: Map[String, String] = Map("admin" -> "password".bcrypt)
+  var users: List[DBUser]                = Nil
 
   def getUserFor(secret: String): Either[String, String] =
     userSecrets
@@ -63,4 +71,27 @@ case class WeakPersistence() extends Persistence[String, String] {
     Right(db.mkString("\n"))
   }
 
+  override def finalize(registrationToken: String): Either[String, String] =
+    if (users.exists(u => u.registrationToken == registrationToken && u.finalized == false)) {
+      users = users.map { u =>
+        if (u.registrationToken == registrationToken) u.copy(finalized = true) else u
+      }
+      Right("User successfully finalized")
+    } else if (users.exists(_.registrationToken == registrationToken)) {
+      Left("User already finalized")
+    } else {
+      Left("No user exists for given token")
+    }
+
+  override def createUser(createUserRequest: CreateUserRequest,
+                          activationToken: String): Either[String, String] =
+    if (users.exists(_.email == createUserRequest.email)) {
+      Left("User with that e-mail already exists")
+    } else {
+      val cur = createUserRequest
+      val user =
+        DBUser(cur.firstName, cur.lastName, cur.email, cur.password.bcrypt, activationToken, false)
+      users = user +: users
+      Right("Successfully created user")
+    }
 }

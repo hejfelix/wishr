@@ -1,25 +1,36 @@
 package com.lambdaminute.wishr.component
 
 import cats.Semigroup
+import cats.data.Validated.{Invalid, Valid}
 import cats.data.{Validated, ValidatedNel}
 import chandu0101.scalajs.react.components.Implicits._
 import chandu0101.scalajs.react.components.materialui._
+import com.lambdaminute.wishr.model.{CreateUserRequest, Wish}
 import japgolly.scalajs.react.vdom.ReactTagOf
 import org.scalajs.dom.html.Div
 
 import scala.collection.immutable.Seq
-//import com.lambdaminute.wishr.serialization.OptionPickler.write
+import com.lambdaminute.wishr.serialization.OptionPickler.write
 import cats.SemigroupK
 import cats.data.NonEmptyList
 import cats.syntax.cartesian._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.prefix_<^._
+import org.scalajs.dom.ext.{Ajax, AjaxException}
+
+import scala.util.{Failure, Success}
+
+import concurrent.ExecutionContext.Implicits.global
 
 object CreateUserPage {
 
-  sealed trait FormError
-  case class MismatchError(left: String, right: String) extends FormError
-  case class FormatError(reason: String)                extends FormError
+  sealed trait FormError {
+    def reason: String
+  }
+  case class MismatchError(left: String, right: String) extends FormError {
+    override def reason = s"$left not the same as $right"
+  }
+  case class FormatError(reason: String) extends FormError
 
   def apply() =
     ReactComponentB[Props]("CreateUserPage")
@@ -27,10 +38,6 @@ object CreateUserPage {
       .renderBackend[CreateUserPage.Backend]
       .propsDefault(Props())
 
-  case class CreateUserRequest(firstName: String,
-                               lastName: String,
-                               email: String,
-                               password: String)
   case class Props()
 
   case class State(
@@ -61,18 +68,18 @@ object CreateUserPage {
 
     def checkEmail(S: State) =
       ((S.email, S.emailRepeat) match {
-        case (Some(a),Some(b)) if a == b && a.contains("@") => valid(a)
-        case (Some(a),Some(b)) if a != b => formMismatchError(a,b)
-        case _ => formError[String]("Missing e-mail")
+        case (Some(a), Some(b)) if a == b && a.contains("@") => valid(a)
+        case (Some(a), Some(b)) if a != b                    => formMismatchError(a, b)
+        case _                                               => formError[String]("Missing e-mail")
       }).toValidatedNel
 
     def checkPassword(S: State) =
       ((S.password, S.passwordRepeat) match {
-        case (Some(a),Some(b)) if a == b && a.length < 6 =>
+        case (Some(a), Some(b)) if a == b && a.length < 6 =>
           formError[String]("Password too short. Must be 6 characters or longer.")
-        case (Some(a),Some(b)) if a == b => valid(a)
-        case (Some(a),Some(b)) if a != b => formMismatchError(a,b)
-        case _ => formError[String]("Missing password")
+        case (Some(a), Some(b)) if a == b => valid(a)
+        case (Some(a), Some(b)) if a != b => formMismatchError("left password", "right password")
+        case _                            => formError[String]("Missing password")
       }).toValidatedNel
 
     private def valid(s: String) = Validated.Valid(s)
@@ -90,7 +97,8 @@ object CreateUserPage {
 
     def validateForm(S: State) =
       (checkName(S) |@| checkLastName(S) |@| checkEmail(S) |@| checkPassword(S)).map {
-        case (firstName, lastName, email, password) => CreateUserRequest(firstName, lastName, email, password)
+        case (firstName, lastName, email, password) =>
+          CreateUserRequest(firstName, lastName, email, password)
       }
 
     def render(S: State, P: Props) = {
@@ -127,21 +135,53 @@ object CreateUserPage {
                      `type` = "password",
                      onChange = handleInput(str => _.copy(passwordRepeat = str)))()
 
-      val submitButton =
-        MuiFlatButton(label = "Submit", onClick = (_: ReactEventH) => Callback(println(s"${S}")))()
+      val formValidation = validateForm(S)
+      val validationText = formValidation match {
+        case Valid(_) => <.div()
+        case Invalid(nel) =>
+          val divs: List[ReactTagOf[Div]] = nel.toList.map(x => <.div(x.reason))
+          <.div(<.h3("Issues"), divs)
+      }
+      val requestJson = formValidation.toOption
 
-      val formIsValid: ValidatedNel[FormError, CreateUserRequest] = validateForm(S)
+      def submitRequest: Callback =
+        Callback({
+
+          requestJson.foreach(json => {
+            Ajax
+              .post(s"./createuser",
+                    write[CreateUserRequest](json),
+                    headers = Map("Content-Type" -> "application/json"))
+              .onComplete {
+                case Success(msg) =>
+                  val snackText = s"Succesfully created user. Check your inbox $msg"
+                  println(snackText)
+                case Failure(AjaxException(xhr)) =>
+                  val snackText =
+                    s"Error creating user ${xhr.responseType}: ${xhr.responseText}"
+                  println(snackText)
+                case Failure(err) =>
+                  val snackText = s"Error creating user ${err}: ${err.getMessage()}"
+                  println(snackText)
+              }
+          })
+        })
+
+      val submitButton =
+        MuiFlatButton(label = "Submit",
+                      primary = true,
+                      onClick = (_: ReactEventH) => submitRequest)()
 
       val form: Seq[ReactTagOf[Div]] =
         List(
           <.div(<.h3("Name"), firstNameText, lastNameText),
           <.div(<.h3("E-mail"), eMail, eMailRepeat),
           <.div(<.h3("Password"), password, passwordRepeat),
-          <.div(submitButton),
-          <.div(formIsValid.toString)
+          if (formValidation.isValid) <.div(submitButton) else <.div(),
+          validationText
         )
 
-      MuiPaper()(<.div(<.h1("Create User"), form))
+      MuiPaper()(<.div(^.cls := "Card", <.h1("Create User"), form))
     }
 
   }

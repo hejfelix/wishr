@@ -13,13 +13,13 @@ libraryDependencies ++= Seq(
 libraryDependencies += "com.github.t3hnar" %% "scala-bcrypt" % "3.0"
 
 libraryDependencies ++= Seq(
-  "org.http4s" %% "http4s-blaze-server" % http4sVersion,
-  "org.http4s" %% "http4s-dsl" % http4sVersion,
-  "org.http4s" %% "http4s-argonaut" % http4sVersion,
-  "org.http4s" %% "http4s-circe" % http4sVersion,
-  "com.typesafe.slick" %% "slick" % "3.2.0-RC1",
-  "org.slf4j" % "slf4j-simple" % "1.6.4",
-  "com.github.melrief" %% "pureconfig" % "0.5.1"
+  "org.http4s"         %% "http4s-blaze-server" % http4sVersion exclude ("org.http4s", "http4s-parboiled2_2.12"),
+  "org.http4s"         %% "http4s-dsl"          % http4sVersion,
+  "org.http4s"         %% "http4s-argonaut"     % http4sVersion,
+  "org.http4s"         %% "http4s-circe"        % http4sVersion,
+  "com.typesafe.slick" %% "slick"               % "3.2.0-RC1",
+  "org.slf4j"          % "slf4j-simple"        % "1.6.4",
+  "com.github.melrief" %% "pureconfig"          % "0.5.1"
 )
 
-
+libraryDependencies += "org.apache.commons" % "commons-email" % "1.4"
