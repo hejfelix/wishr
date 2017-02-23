@@ -2,12 +2,8 @@ package com.lambdaminute.wishr
 
 import com.lambdaminute.WishRService
 import com.lambdaminute.wishr.config.Module.ModuleOr
-import com.lambdaminute.wishr.config.{
-  ApplicationConf,
-  PersistenceConfig,
-  PersistenceModule,
-  WeakPersistenceConfig
-}
+import com.lambdaminute.wishr.config.{ApplicationConf, PersistenceConfig, PersistenceModule, WeakPersistenceConfig}
+import com.lambdaminute.wishr.notification.Email
 import com.lambdaminute.wishr.persistence.Persistence
 import fs2.Task
 import org.http4s.server.blaze.BlazeBuilder
@@ -18,9 +14,8 @@ import scala.util.Try
 
 object WishRApplication extends ServerApp {
 
+  //How to use this with ServerApp, since it expects Task[Server] and no Try[...]
   val configuration: ApplicationConf = loadConfig[ApplicationConf].get
-
-  println(configuration)
 
   val persistenceModule = new PersistenceModule()
   val persistence: ModuleOr[Persistence[String, String]] =

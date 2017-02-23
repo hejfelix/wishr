@@ -1,8 +1,9 @@
 package com.lambdaminute.wishr.persistence
-import com.lambdaminute.wishr.model.{CreateUserRequest, UserSecret, WishEntry}
-import com.github.t3hnar.bcrypt._
 import java.time.Instant
-import java.time.temporal.{ChronoUnit, Temporal, TemporalAmount}
+import java.time.temporal.ChronoUnit
+
+import com.github.t3hnar.bcrypt._
+import com.lambdaminute.wishr.model.{CreateUserRequest, UserSecret, WishEntry}
 
 case class WeakPersistence() extends Persistence[String, String] {
 
@@ -13,10 +14,10 @@ case class WeakPersistence() extends Persistence[String, String] {
                     registrationToken: String,
                     finalized: Boolean)
 
-  var db: List[WishEntry]                = Nil
-  var userSecrets: List[UserSecret]      = Nil
-  var hashPasswords: Map[String, String] = Map("admin" -> "password".bcrypt)
-  var users: List[DBUser]                = Nil
+  var db: List[WishEntry]           = Nil
+  var userSecrets: List[UserSecret] = Nil
+  var users: List[DBUser] = List(
+    DBUser("Felix", "Palludan Hargreaves", "", "abekatten".bcrypt, "", true))
 
   def getUserFor(secret: String): Either[String, String] =
     userSecrets
@@ -24,10 +25,13 @@ case class WeakPersistence() extends Persistence[String, String] {
       .map(_.user)
       .toRight("Token expired")
 
-  def plusTimeout(i: Instant) = i.plus(20, ChronoUnit.SECONDS)
+  def plusTimeout(i: Instant) = i.plus(60, ChronoUnit.SECONDS)
+
+  private def getHashedPasswordFor(username: String) =
+    users.find(_.firstName == username).map(_.hashedPassword).getOrElse("")
 
   override def logIn(user: String, hash: String): Either[String, String] =
-    if (hash.isBcrypted(hashPasswords.getOrElse(user, ""))) {
+    if (hash.isBcrypted(getHashedPasswordFor(user))) {
 
       val newSecret = java.util.UUID.randomUUID.toString
 

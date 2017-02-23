@@ -27,6 +27,8 @@ case class WishRAuthentication(persistence: Persistence[String, String]) extends
   //Authenticate the user
   val authUser: Kleisli[Task, Request, Either[String, User]] = Kleisli(
     request => {
+      println("HELLOOOO")
+      trace(request)
       if (request.method == POST && request.pathInfo == "/login")
         handleLogin(request)
       else
@@ -42,18 +44,23 @@ case class WishRAuthentication(persistence: Persistence[String, String]) extends
       .as(jsonOf[LoginRequest])
       .map {
         case LoginRequest(user, password) =>
-          persistence.logIn(user, password).map(secret => User(user, secret))
+          persistence.logIn(user, password).map(trace).map(secret => User(user, secret))
       }
 
-  val onAuthFailure: AuthedService[String] = Kleisli(req => Forbidden(req.authInfo))
+  val onAuthFailure: AuthedService[String] = Kleisli(req => {
+    println("Blaaa")
+    Forbidden(req.authInfo)
+  })
 
-  def authWithFailure[Err, T](authUser: Service[Request, Either[Err, T]],
-                              onFailure: Service[AuthedRequest[Err], MaybeResponse]): AuthMiddleware[T] = {
+  def authWithFailure[Err, T](
+      authUser: Service[Request, Either[Err, T]],
+      onFailure: Service[AuthedRequest[Err], MaybeResponse]): AuthMiddleware[T] = {
     service: Service[AuthedRequest[T], MaybeResponse] =>
       Choice[Service]
         .choice(onFailure, service)
         .local({ authed: AuthedRequest[Either[Err, T]] =>
-          authed.authInfo.bimap(err => AuthedRequest(err, authed.req), suc => AuthedRequest(suc, authed.req))
+          authed.authInfo.bimap(err => AuthedRequest(err, authed.req),
+                                suc => AuthedRequest(suc, authed.req))
         })
         .compose(AuthedRequest(authUser.run))
   }

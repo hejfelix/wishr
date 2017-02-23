@@ -14,13 +14,13 @@ import scalaz.Alpha.{P, S}
 
 object LoginPage {
 
-  def apply(onLogin: Either[String, User] => Unit) =
+  def apply(onLogin: Either[String, User] => Unit, goToCreateUserPage: Callback) =
     ReactComponentB[Props]("LoginPage")
       .initialState(LoginPage.State("", ""))
       .renderBackend[LoginPage.Backend]
-      .propsDefault(Props(onLogin))
+      .propsDefault(Props(onLogin, goToCreateUserPage))
 
-  case class Props(handleLogin: Either[String, User] => Unit)
+  case class Props(handleLogin: Either[String, User] => Unit, goToCreateUserPage: Callback)
 
   case class State(name: String, password: String)
 
@@ -41,11 +41,11 @@ object LoginPage {
     def render(S: State, P: Props) = {
 
       val sendLogin = Callback {
+        println(s"Trying to log in with: ${write[LoginRequest](LoginRequest(S.name, S.password))}")
         Ajax
           .post(s"./login",
                 write[LoginRequest](LoginRequest(S.name, S.password)),
-                headers = Map("Content-Type" ->
-                  "application/json"))
+                headers = Map("Content-Type" -> "application/json"))
           .map(_.responseText)
           .onComplete {
             case Success(msg) =>
@@ -57,14 +57,21 @@ object LoginPage {
               P.handleLogin(Left(err.getMessage))
           }
       }
+
       def handleLoginButton: ReactEventH => Callback =
         e => sendLogin >> Callback.info("Login button pressed")
 
-      val userNameField: ReactComponentU_ = MuiTextField(hintText = "username", onChange = handleNameChange)()
+      val userNameField: ReactComponentU_ =
+        MuiTextField(hintText = "username", onChange = handleNameChange)()
       val passwordField: ReactComponentU_ =
         MuiTextField(hintText = "password", `type` = "password", onChange = handlePasswordChange)()
       val loginButton = MuiFlatButton(label = "login", onClick = handleLoginButton)()
-      <.div(MuiPaper()(<.div(userNameField), <.div(passwordField), loginButton))
+
+      val createNewUserButton = MuiFlatButton(label = "Create a new user", onClick = (r: ReactEventH) => P
+      .goToCreateUserPage)()
+      val createSection = <.div("or", <.div(createNewUserButton))
+
+      <.div(MuiPaper()(<.div(userNameField), <.div(passwordField), loginButton, createSection))
     }
 
   }

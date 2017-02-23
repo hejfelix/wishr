@@ -111,27 +111,27 @@ object CreateUserPage {
         }
 
       val firstNameText =
-        MuiTextField(hintText = "First Name",
+        MuiTextField(floatingLabelText = "First Name",
                      onChange = handleInput(str => _.copy(firstName = str)))()
 
       val lastNameText =
-        MuiTextField(hintText = "Last Name",
+        MuiTextField(floatingLabelText = "Last Name",
                      onChange = handleInput(str => _.copy(lastName = str)))()
 
       val eMail =
-        MuiTextField(hintText = "e-mail", onChange = handleInput(str => _.copy(email = str)))()
+        MuiTextField(floatingLabelText = "e-mail", onChange = handleInput(str => _.copy(email = str)))()
 
       val eMailRepeat =
-        MuiTextField(hintText = "repeat e-mail",
+        MuiTextField(floatingLabelText = "repeat e-mail",
                      onChange = handleInput(str => _.copy(emailRepeat = str)))()
 
       val password =
-        MuiTextField(hintText = "Password",
+        MuiTextField(floatingLabelText = "Password",
                      `type` = "password",
                      onChange = handleInput(str => _.copy(password = str)))()
 
       val passwordRepeat =
-        MuiTextField(hintText = "Repeat password",
+        MuiTextField(floatingLabelText = "Repeat password",
                      `type` = "password",
                      onChange = handleInput(str => _.copy(passwordRepeat = str)))()
 

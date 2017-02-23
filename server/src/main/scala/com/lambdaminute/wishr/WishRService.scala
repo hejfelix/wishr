@@ -4,8 +4,8 @@ import java.io.File
 
 import com.lambdaminute.wishr.WishRAuthentication
 import com.lambdaminute.wishr.config.ApplicationConf
-import com.lambdaminute.wishr.model.{CreateUserRequest, User, Wish, WishEntry}
-import com.lambdaminute.wishr.notification.{Email, EmailCredentials}
+import com.lambdaminute.wishr.model._
+import com.lambdaminute.wishr.notification.Email
 import com.lambdaminute.wishr.persistence.Persistence
 import fs2.Task
 import io.circe.Printer
@@ -43,7 +43,7 @@ case class WishRService(persistence: Persistence[String, String],
       println(s"Got static file request: ${request.pathInfo}")
       serveFile("." + request.pathInfo, request)
 
-    case request @ (POST -> Root / createuser) =>
+    case request @ (POST -> Root / "createuser") =>
       val createUserRequest = request.as(jsonOf[CreateUserRequest]).unsafeRun()
       val registrationToken = java.util.UUID.randomUUID.toString
       println(s"""Creating ${createUserRequest.copy(password = "")}""")
@@ -68,14 +68,14 @@ case class WishRService(persistence: Persistence[String, String],
   }
 
   private def sendActivationEmail(email: String, token: String): String =
-    Email(configuration.emailSettings.sender,
-          EmailCredentials(configuration.emailSettings.user, configuration.emailSettings.password),
-          configuration.rootPath)
+    Email(configuration.emailSettings, configuration.rootPath)
       .sendTo(email, token)
 
   def authedService: AuthedService[User] = AuthedService {
 
-    case request @ (POST -> Root / "login" as user) => Ok(user.secret)
+    case request @ (POST -> Root / "login" as user) =>
+      println("LOGIN REQUEST"+request)
+      Ok(user.secret)
 
     case GET -> Root / "entries" as user =>
       getEntriesFor(user.name)

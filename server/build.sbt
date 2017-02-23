@@ -13,7 +13,7 @@ libraryDependencies ++= Seq(
 libraryDependencies += "com.github.t3hnar" %% "scala-bcrypt" % "3.0"
 
 libraryDependencies ++= Seq(
-  "org.http4s"         %% "http4s-blaze-server" % http4sVersion exclude ("org.http4s", "http4s-parboiled2_2.12"),
+  "org.http4s"         %% "http4s-blaze-server" % http4sVersion,
   "org.http4s"         %% "http4s-dsl"          % http4sVersion,
   "org.http4s"         %% "http4s-argonaut"     % http4sVersion,
   "org.http4s"         %% "http4s-circe"        % http4sVersion,
