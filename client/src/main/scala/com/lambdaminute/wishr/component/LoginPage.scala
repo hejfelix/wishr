@@ -62,16 +62,28 @@ object LoginPage {
         e => sendLogin >> Callback.info("Login button pressed")
 
       val userNameField: ReactComponentU_ =
-        MuiTextField(hintText = "username", onChange = handleNameChange)()
+        MuiTextField(floatingLabelText = "username", onChange = handleNameChange)()
       val passwordField: ReactComponentU_ =
-        MuiTextField(hintText = "password", `type` = "password", onChange = handlePasswordChange)()
-      val loginButton = MuiFlatButton(label = "login", onClick = handleLoginButton)()
+        MuiTextField(floatingLabelText = "password",
+                     `type` = "password",
+                     onChange = handlePasswordChange)()
+      val loginButton =
+        MuiFlatButton(label = "login", primary = true, onClick = handleLoginButton)()
 
-      val createNewUserButton = MuiFlatButton(label = "Create a new user", onClick = (r: ReactEventH) => P
-      .goToCreateUserPage)()
-      val createSection = <.div("or", <.div(createNewUserButton))
+      val createNewUserButton = MuiFlatButton(label = "Create a new user",
+                                              secondary = true,
+                                              onClick = (r: ReactEventH) => P.goToCreateUserPage)()
+      val createSection = <.div()
 
-      <.div(MuiPaper()(<.div(userNameField), <.div(passwordField), loginButton, createSection))
+      <.div(
+        MuiPaper()(
+          <.div(^.cls := "Card",
+                <.div(userNameField),
+                <.div(passwordField),
+                loginButton,
+                "or",
+                createNewUserButton,
+                createSection)))
     }
 
   }

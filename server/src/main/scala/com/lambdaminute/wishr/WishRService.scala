@@ -14,6 +14,7 @@ import org.http4s._
 import org.http4s.circe.CirceInstances
 import org.http4s.dsl._
 import org.http4s.server.syntax._
+import cats.implicits._
 
 case class WishRService(persistence: Persistence[String, String],
                         authentication: WishRAuthentication,

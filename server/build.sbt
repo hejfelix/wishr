@@ -4,6 +4,8 @@ val http4sVersion = "0.16.0-cats-SNAPSHOT"
 
 val circeVersion = "0.7.0"
 
+val doobieVersion = "0.4.1"
+
 libraryDependencies ++= Seq(
   "io.circe" %% "circe-core",
   "io.circe" %% "circe-generic",
@@ -17,9 +19,16 @@ libraryDependencies ++= Seq(
   "org.http4s"         %% "http4s-dsl"          % http4sVersion,
   "org.http4s"         %% "http4s-argonaut"     % http4sVersion,
   "org.http4s"         %% "http4s-circe"        % http4sVersion,
-  "com.typesafe.slick" %% "slick"               % "3.2.0-RC1",
-  "org.slf4j"          % "slf4j-simple"        % "1.6.4",
+  "org.slf4j"          % "slf4j-simple"         % "1.6.4",
   "com.github.melrief" %% "pureconfig"          % "0.5.1"
 )
 
+//Doobie stuff
+libraryDependencies ++= Seq(
+  "org.tpolecat" %% "doobie-core-cats",
+  "org.tpolecat" %% "doobie-h2-cats"
+).map(_ % doobieVersion)
+
+//Java dependencies
+libraryDependencies += "com.h2database" % "h2" % "1.4.193"
 libraryDependencies += "org.apache.commons" % "commons-email" % "1.4"

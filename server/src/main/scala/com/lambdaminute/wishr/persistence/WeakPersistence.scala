@@ -7,14 +7,9 @@ import com.lambdaminute.wishr.model.{CreateUserRequest, UserSecret, WishEntry}
 
 case class WeakPersistence() extends Persistence[String, String] {
 
-  case class DBUser(firstName: String,
-                    lastName: String,
-                    email: String,
-                    hashedPassword: String,
-                    registrationToken: String,
-                    finalized: Boolean)
 
-  var db: List[WishEntry]           = Nil
+
+  var wishes: List[WishEntry]           = Nil
   var userSecrets: List[UserSecret] = Nil
   var users: List[DBUser] = List(
     DBUser("Felix", "Palludan Hargreaves", "", "abekatten".bcrypt, "", true))
@@ -68,11 +63,11 @@ case class WeakPersistence() extends Persistence[String, String] {
   }
 
   override def getEntriesFor(user: String): Either[String, List[WishEntry]] =
-    Right(db.filter(_.user == user))
+    Right(wishes.filter(_.user == user))
 
   override def set(entries: List[WishEntry]): Either[String, String] = {
-    db = entries
-    Right(db.mkString("\n"))
+    wishes = entries
+    Right(wishes.mkString("\n"))
   }
 
   override def finalize(registrationToken: String): Either[String, String] =
