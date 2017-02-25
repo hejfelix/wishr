@@ -7,9 +7,7 @@ import com.lambdaminute.wishr.model.{CreateUserRequest, UserSecret, WishEntry}
 
 case class WeakPersistence() extends Persistence[String, String] {
 
-
-
-  var wishes: List[WishEntry]           = Nil
+  var wishes: List[WishEntry]       = Nil
   var userSecrets: List[UserSecret] = Nil
   var users: List[DBUser] = List(
     DBUser("Felix", "Palludan Hargreaves", "", "abekatten".bcrypt, "", true))

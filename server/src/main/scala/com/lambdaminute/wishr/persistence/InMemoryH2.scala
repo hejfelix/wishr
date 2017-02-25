@@ -6,16 +6,15 @@ import com.lambdaminute.wishr.model.{CreateUserRequest, WishEntry}
 import doobie.free.connection.{ConnectionIO, ConnectionOp}
 import doobie.imports._
 import org.h2.tools.Server
-
+import cats._, cats.data._, cats.implicits._
+import fs2.interop.cats._
 case class InMemoryH2(dbConfigKey: String, port: Int) extends Persistence[String, String] {
 
   val h2Server = Server.createTcpServer("-tcpAllowOthers").start()
 
-//  val xa = DriverManagerTransactor[IOLite]("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "sa", "")
   val xa = DriverManagerTransactor[IOLite](
     "org.h2.Driver",
     "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;MODE=MySQL",
-//    "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1",
     "sa",
     ""
   )
@@ -40,10 +39,22 @@ case class InMemoryH2(dbConfigKey: String, port: Int) extends Persistence[String
       )
    """.update
 
+  val createWishesTable: Update0 = sql"""
+    CREATE TABLE wishes (
+       user                     VARCHAR,
+       heading                  VARCHAR,
+       description              VARCHAR,
+       imageURL                 VARCHAR,
+       id                       INT NOT NULL AUTO_INCREMENT
+      )
+   """.update
+
   val createUsersResult: Int = createUsersTable.run.transact(xa).unsafePerformIO
   println(s"Create users: $createUsersResult")
   val createSecretsResult: Int = createSecretsTable.run.transact(xa).unsafePerformIO
   println(s"Create secrets: $createSecretsResult")
+  val createWishesResult: Int = createWishesTable.run.transact(xa).unsafePerformIO
+  println(s"Create wishes: $createWishesResult")
 
   case class UserPass(firstName: String, hashedPassword: String)
 
@@ -53,8 +64,9 @@ case class InMemoryH2(dbConfigKey: String, port: Int) extends Persistence[String
 
     val userPass: List[UserPass] = selectUser.list.transact(xa).unsafePerformIO
     userPass match {
-      case UserPass(_, storedHash) :: Nil if hash.isBcrypted(storedHash) => getOrCreateSecretFor(user)
-      case _                                                             => Left("Bad user credentials")
+      case UserPass(_, storedHash) :: Nil if hash.isBcrypted(storedHash) =>
+        getOrCreateSecretFor(user)
+      case _ => Left("Bad user credentials")
     }
   }
 
@@ -65,7 +77,7 @@ case class InMemoryH2(dbConfigKey: String, port: Int) extends Persistence[String
       sql"""
     INSERT INTO secrets (user, secret, expirationDate) VALUES ($user, $newSecret, DATEADD('SECOND',60,
     CURRENT_TIMESTAMP()))
-                      ON DUPLICATE KEY UPDATE expirationDate=DATEADD('SECOND',60, CURRENT_TIMESTAMP())
+      ON DUPLICATE KEY UPDATE expirationDate=DATEADD('SECOND',60, CURRENT_TIMESTAMP())
          """.update.run
 
     val token: Free[ConnectionOp, (Int, String)] = for {
@@ -79,22 +91,58 @@ case class InMemoryH2(dbConfigKey: String, port: Int) extends Persistence[String
     }
   }
 
-  override def getSecretFor(user: String): Either[String, String] = ???
+  override def getSecretFor(user: String): Either[String, String] =
+    sql"SELECT secret FROM secrets WHERE user=$user and now() < expirationDate"
+      .query[String]
+      .option
+      .map(_.toRight("Token expired"))
+      .transact(xa)
+      .unsafePerformIO
 
   override def getUserFor(secret: String): Either[String, String] = {
     val userFor =
       sql"SELECT user FROM secrets WHERE secret=$secret AND now() < expirationDate"
-      .query[String]
-      .option
-      .map(_.toRight("Token expired"))
+        .query[String]
+        .option
+        .map(_.toRight("Token expired"))
     userFor.transact(xa).unsafePerformIO
   }
 
-  override def getEntriesFor(user: String): Either[String, List[WishEntry]] = Right(Nil)
+  override def getEntriesFor(user: String): Either[String, List[WishEntry]] =
+    sql"SELECT user, heading, description, imageURL, id FROM wishes WHERE user=$user"
+      .query[WishEntry]
+      .list
+      .attemptSql
+      .map(_.left.map(_.getMessage))
+      .transact(xa)
+      .unsafePerformIO
 
-  override def set(entries: List[WishEntry]): Either[String, String] = ???
+  private def entryToTuple(w: WishEntry): (String, String, String, String) =
+    (w.user, w.heading, w.desc, w.image)
 
-  override def finalize(registrationToken: String): Either[String, String] = ???
+  private def setEntriesFor(user: String, entries: List[WishEntry]) =
+    for {
+      deleteCount <- sql"DELETE FROM wishes WHERE user=$user".update.run
+      insertCount <- Update[(String, String, String, String)](
+        "INSERT INTO wishes (user, heading, description, imageURL) VALUES (?, ?, ?, ?)")
+        .updateMany(entries.map(entryToTuple))
+    } yield
+      if (insertCount == entries.length) Right(s"Successfully updated $insertCount wishes")
+      else Left("Failed updating wishes")
+
+  override def set(entries: List[WishEntry]): Either[String, String] =
+    entries match {
+      case Nil     => Right("No wishes to add")
+      case x :: xs => setEntriesFor(x.user, entries).transact(xa).unsafePerformIO
+    }
+
+  override def finalize(registrationToken: String): Either[String, String] =
+    sql"UPDATE users SET finalized=TRUE WHERE registrationToken=$registrationToken".update.run
+      .map(n =>
+        if (n == 1) Right("Successfully activated user")
+        else Left("No user for that token was found"))
+      .transact(xa)
+      .unsafePerformIO
 
   override def createUser(createUserRequest: CreateUserRequest,
                           activationToken: String): Either[String, String] = {

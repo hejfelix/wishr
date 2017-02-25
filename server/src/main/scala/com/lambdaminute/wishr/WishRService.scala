@@ -94,7 +94,7 @@ case class WishRService(persistence: Persistence[String, String],
     val wishes: Either[String, List[Wish]] = entries.map {
       case actualEntries =>
         actualEntries.map {
-          case WishEntry(_, heading, desc, image) => Wish(heading, desc, image)
+          case WishEntry(_, heading, desc, image, id) => Wish(heading, desc, Option(image))
         }
     }
 
@@ -110,7 +110,7 @@ case class WishRService(persistence: Persistence[String, String],
 
     val entries = wishes.map {
       case Wish(heading, desc, image) =>
-        WishEntry(user.name, heading, desc, image)
+        WishEntry(user.name, heading, desc, image.getOrElse(""), -1)
     }
 
     println(s"Setting wishes for $user: ${wishes.mkString}")
