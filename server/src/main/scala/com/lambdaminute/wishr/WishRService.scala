@@ -34,6 +34,9 @@ case class WishRService(persistence: Persistence[String, String],
 
   val unauthedService: HttpService = HttpService {
 
+    case GET -> Root / "status" =>
+      Ok()
+
     case request @ (GET -> Root) =>
       println(s"Got request for root")
       serveFile("./index.html" + request.pathInfo, request)
@@ -75,7 +78,7 @@ case class WishRService(persistence: Persistence[String, String],
   def authedService: AuthedService[User] = AuthedService {
 
     case request @ (POST -> Root / "login" as user) =>
-      println("LOGIN REQUEST"+request)
+      println("LOGIN REQUEST" + request)
       Ok(user.secret)
 
     case GET -> Root / "entries" as user =>
