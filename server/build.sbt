@@ -6,6 +6,9 @@ val circeVersion = "0.7.0"
 
 val doobieVersion = "0.4.1"
 
+resolvers +=
+  "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+
 libraryDependencies ++= Seq(
   "io.circe" %% "circe-core",
   "io.circe" %% "circe-generic",

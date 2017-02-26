@@ -28,7 +28,7 @@ object WishRApplication extends ServerApp {
     serviceTask.flatMap(
       wishrService =>
         BlazeBuilder
-          .bindHttp(8080, "localhost")
+          .bindHttp(8080, "0.0.0.0")
           .mountService(wishrService.service, "/")
           .start)
 
