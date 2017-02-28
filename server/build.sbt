@@ -29,7 +29,8 @@ libraryDependencies ++= Seq(
 //Doobie stuff
 libraryDependencies ++= Seq(
   "org.tpolecat" %% "doobie-core-cats",
-  "org.tpolecat" %% "doobie-h2-cats"
+  "org.tpolecat" %% "doobie-h2-cats",
+  "org.tpolecat" %% "doobie-postgres-cats"
 ).map(_ % doobieVersion)
 
 //Java dependencies
