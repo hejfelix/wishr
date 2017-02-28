@@ -20,7 +20,11 @@ script:
   - sudo cp ./client/target/scala-2.11/client-fastopt.js ./server/target/pack/client/target/scala-2.11/client-fastopt.js
   - sudo cp -r ./assets ./server/target/pack/
   - docker build -t hejfelix/wishr .
-
+  - docker push hejfelix/wishr
+  - docker login docker login --username=$HEROKU_EMAIL --password=$HEROKU_API_KEY registry.heroku.com
+  - docker build -t registry.heroku.com/wishr-lambdaminute/web .
+  - docker push registry.heroku.com/wishr-lambdaminute/web
+  
 after_success:
   - if [ "$TRAVIS_BRANCH" == "master" ]; then
     docker push hejfelix/wishr;
