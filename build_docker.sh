@@ -5,7 +5,7 @@ docker pull 1science/sbt:0.13.8-oracle-jre-8
 docker pull schodemeiss/npm-tools
 
 #Build server / client
-docker run -ti --rm -v "$PWD:/app" -v "$HOME/.ivy2":/root/.ivy2 1science/sbt \
+docker run -ti --rm -v "$PWD:/app" -v "$HOME/.ivy2":/root/.ivy2 1science/sbt:0.13.8-oracle-jre-8 \
 \sbt clean compile client/fastOptJS server/pack
 
 #Fetch JS dependencies

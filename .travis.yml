@@ -9,7 +9,7 @@ before_install:
   - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
   - docker pull 1science/sbt:0.13.8-oracle-jre-8
   - docker pull schodemeiss/npm-tools
-  - docker run -ti --rm -v "$PWD:/app" -v "$HOME/.ivy2":/root/.ivy2 1science/sbt \sbt clean compile client/fastOptJS server/pack
+  - docker run -ti --rm -v "$PWD:/app" -v "$HOME/.ivy2":/root/.ivy2 1science/sbt:0.13.8-oracle-jre-8 \sbt clean compile client/fastOptJS server/pack
   - docker run --rm -it -v "$PWD":/app schodemeiss/npm-tools npm install
   - docker run --rm -it -v "$PWD":/app schodemeiss/npm-tools webpack
 
@@ -24,7 +24,7 @@ script:
   - docker login docker login --username=$HEROKU_EMAIL --password=$HEROKU_API_KEY registry.heroku.com
   - docker build -t registry.heroku.com/wishr-lambdaminute/web .
   - docker push registry.heroku.com/wishr-lambdaminute/web
-  
+
 after_success:
   - if [ "$TRAVIS_BRANCH" == "master" ]; then
     docker push hejfelix/wishr;
