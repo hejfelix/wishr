@@ -21,6 +21,6 @@ script:
   - sudo cp -r ./assets ./server/target/pack/
   - docker build -t hejfelix/wishr .
   - docker push hejfelix/wishr
-  - docker login docker login --username=$HEROKU_EMAIL --password=$HEROKU_API_KEY registry.heroku.com
+  - docker login --username=$HEROKU_EMAIL --password=$HEROKU_API_KEY registry.heroku.com
   - docker build -t registry.heroku.com/wishr-lambdaminute/web .
   - docker push registry.heroku.com/wishr-lambdaminute/web
