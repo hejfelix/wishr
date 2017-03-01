@@ -1,162 +1,98 @@
 package com.lambdaminute.wishr.component
 
-import derive.key
-import japgolly.scalajs.react.{BackendScope, Callback, ReactComponentB, ReactNode}
-
-import scala.scalajs
-import scala.scalajs.js
+import chandu0101.scalajs.react.components.materialui.Mui.SvgIcons.ImageControlPoint
 import chandu0101.scalajs.react.components.materialui._
-import japgolly.scalajs.react._
+import com.lambdaminute.wishr.component.WishRAppContainer.{Action, Page}
+import com.lambdaminute.wishr.model.Wish
 import japgolly.scalajs.react.vdom.prefix_<^._
-import chandu0101.scalajs.react.components.Implicits._
-import com.lambdaminute.wishr.model.{Wish, WishList}
-import japgolly.scalajs.react.Addons.ReactCssTransitionGroup
-import Mui.SvgIcons.ImageControlPoint
-import com.lambdaminute.wishr.component.WishCard.{Backend, Props, State}
-import com.lambdaminute.wishr.serialization
-import japgolly.scalajs.react.ReactComponentC.DefaultProps
-import org.scalajs.dom
-import org.scalajs.dom.ext.{Ajax, AjaxException}
-
-import scalacss.mutable.StyleSheet
-import serialization.OptionPickler._
-
-import concurrent.ExecutionContext.Implicits.global
-import scala.util.{Failure, Success}
+import japgolly.scalajs.react.{BackendScope, Callback, ReactComponentB, ReactNode, _}
 object EditWishesPage {
 
   def apply(user: String,
             wishes: List[Wish],
-            theme: MuiTheme,
             secret: String,
-            showSnackBar: String => Unit) =
+            showSnackBar: String => Unit,
+            editingWishes: List[Wish],
+            startEditing: Wish => Unit,
+            stopEditing: (Wish, Wish) => Unit,
+            updateWishes: (List[Wish] => List[Wish]) => Unit,
+            showDialog: (String, Option[Page], List[Action]) => Unit) =
     ReactComponentB[EditWishesPage.Props]("UserCard")
       .initialState(EditWishesPage
-        .State(false, user, wishes, None, Nil, theme))
+        .State())
       .renderBackend[EditWishesPage.Backend]
-      .propsDefault(EditWishesPage.Props(user, secret, showSnackBar))
+      .propsDefault(
+        EditWishesPage
+          .Props(user,
+                 secret,
+                 wishes,
+                 showSnackBar,
+                 editingWishes,
+                 startEditing,
+                 stopEditing,
+                 updateWishes,
+                 showDialog))
 
-  case class Props(owner: String, secret: String, showSnackBar: String => Unit)
-
-  case class State(deleteDialogIsOpen: Boolean,
-                   user: String,
+  case class Props(owner: String,
+                   secret: String,
                    wishes: List[Wish],
-                   selectedWish: Option[Wish],
+                   showSnackBar: String => Unit,
                    editingWishes: List[Wish],
-                   theme: MuiTheme)
+                   startEditing: Wish => Unit,
+                   stopEditing: (Wish, Wish) => Unit,
+                   updateWishes: (List[Wish] => List[Wish]) => Unit,
+                   showDialog: (String, Option[Page], List[Action]) => Unit)
 
-  def dropFirstMatch[T](l: List[T], t: T) =
-    l.takeWhile(_ != t) ++ l.dropWhile(_ != t).drop(1)
+  case class State()
 
   class Backend($ : BackendScope[Props, State]) {
 
-    def persist(state: State): State = {
-      Ajax
-        .post(s"./set",
-              write[List[Wish]](state.wishes),
-              headers = Map("Content-Type"  -> "application/json",
-                            "Authorization" -> $.props.runNow().secret))
-        .onComplete {
-          case Success(msg) =>
-            val snackText = s"Succesfully persisted state"
-            println(snackText)
-            $.props.runNow().showSnackBar(snackText)
-          case Failure(AjaxException(xhr)) =>
-            val snackText = s"Error persisting state ${xhr.responseType}: ${xhr.responseText}"
-            println(snackText)
-            $.props.runNow().showSnackBar(snackText)
-          case Failure(err) =>
-            val snackText = s"Error persisting state ${err}: ${err.getMessage()}"
-            println(snackText)
-            $.props.runNow().showSnackBar(snackText)
-        }
-
-      state
-    }
-
-    def changeWish(from: Wish, to: Wish)(state: State): State =
-      persist(
-        state.copy(
-          wishes = state.wishes.takeWhile(_ != from) ++ (to :: state.wishes
-              .dropWhile(_ != from)
-              .drop(1))))
-
-    def removeSelectedAndClose(s: State): State =
-      s.selectedWish match {
-        case Some(w) =>
-          persist(s.copy(deleteDialogIsOpen = false, wishes = dropFirstMatch(s.wishes, w)))
-        case None => s
-      }
-    def addWish(w: Wish, inEditMode: Boolean = false)(s: State): State =
-      if (s.wishes.contains(w))
-        s
-      else if (inEditMode)
-        s.copy(
-          wishes = w :: s.wishes,
-          editingWishes = w :: s.editingWishes
-        )
+    def addWish(w: Wish, inEditMode: Boolean = false)(wishes: List[Wish]): List[Wish] =
+      if (wishes.contains(w))
+        wishes
       else
-        s.copy(
-          wishes = w :: s.wishes
-        )
-
-    def openAndSelect(w: Wish): Callback =
-      $.modState(s => s.copy(deleteDialogIsOpen = true, selectedWish = Option(w))) >> Callback
-        .info(
-          s"Opened delete dialog and " +
-            s"selected $w")
-
-    val close: Callback = $.modState(s => s.copy(deleteDialogIsOpen = false))
+        w :: wishes
 
     def handleAddWish: ReactEventH => Callback =
-      e => $.modState(addWish(Wish("New Wish", "Description", None), true))
+      e =>
+        Callback(
+          $.props.runNow().updateWishes(addWish(Wish("New Wish", "Description", None), true)))
 
     def handleDialogCancel: ReactEventH => Callback =
-      e => close >> Callback.info("Cancel Clicked")
+      e => Callback.info("Cancel Clicked")
 
     def handleDialogSubmit: ReactEventH => Callback =
-      e => $.modState(removeSelectedAndClose) >> Callback.info("Submit Clicked")
+      e => Callback.info("Submit Clicked")
 
     val handleClose: Boolean => Callback =
-      b => close >> Callback.info(s"onRequestClose: $b")
+      b => Callback.info(s"onRequestClose: $b")
 
     def handleDelete(w: Wish): ReactEventH => Callback =
-      e => $.modState(removeSelectedAndClose)
+      e => Callback.info("Delete clicked")
 
-    def startEditing(w: Wish): Callback =
-      $.modState(s => s.copy(editingWishes = w :: s.editingWishes))
+    val deleteDialogText = "Are you sure you want to delete this wish? Deleting cannot be undone"
 
-    def stopEditingAndUpdate(w: Wish): Callback =
-      $.modState(s => {
-        val newEditing = dropFirstMatch(s.editingWishes, w)
-        println(s"editing before ${s.editingWishes.map(_.heading)},  now: ${newEditing}")
-        s.copy(editingWishes = newEditing)
-      })
+    def dropFirstMatch[T](l: List[T], t: T) =
+      l.takeWhile(_ != t) ++ l.dropWhile(_ != t).drop(1)
 
     def render(S: State, P: Props) = {
 
-      lazy val deleteDialog = MuiDialog(
-        title = "Are you sure?",
-        actions = actions,
-        open = S.deleteDialogIsOpen,
-        onRequestClose = handleClose
-      )(
-        "Deleting a wish cannot be undone"
-      )
-
       lazy val cards =
-        S.wishes.zipWithIndex.map {
+        P.wishes.zipWithIndex.map {
           case (w, i) =>
+            val deleteAction =
+              Action("Delete", Callback(P.updateWishes(l => dropFirstMatch(l, w)))) :: Nil
+            val deleteCallback =
+              Callback(P.showDialog(deleteDialogText, None, deleteAction))
             WishCard.fromWish(
               w,
-              openAndSelect(w),
+              deleteCallback >> Callback.info(s"Deleting wish: $w"),
               i,
-              S.editingWishes.contains(w),
-              startEditing(w),
+              P.editingWishes.contains(w),
+              Callback(P.startEditing(w)) >> Callback.info(s"Started editing $w"),
               newWish =>
-                stopEditingAndUpdate(w) >>
-                  $.modState(changeWish(w, newWish)) >> Callback.info(
-                  s"Changed state from $w to $newWish. ${S.editingWishes}")
+                Callback(P.stopEditing(w, newWish)) >> Callback.info(
+                  s"Changing wish to ${newWish}")
             )
         }
 
@@ -185,8 +121,7 @@ object EditWishesPage {
           ImageControlPoint(
             )())
 
-      MuiMuiThemeProvider(muiTheme = S.theme)(
-        <.div(_react_fragReactNode(addWishButton), <.div(title, deleteDialog, wishCards)))
+      <.div(_react_fragReactNode(addWishButton), <.div(title, wishCards))
     }
   }
 

@@ -36,7 +36,7 @@ case class PostgreSQLPersistence(dbconf: DBConfig) extends Persistence[String, S
 
   val createSecretsTable: Update0 = sql"""
     CREATE TABLE IF NOT EXISTS secrets (
-       usr              VARCHAR UNIQUE,
+       email            VARCHAR UNIQUE,
        secret           VARCHAR,
        expirationDate   TIMESTAMP
       )
@@ -44,7 +44,7 @@ case class PostgreSQLPersistence(dbconf: DBConfig) extends Persistence[String, S
 
   val createWishesTable: Update0 = sql"""
     CREATE TABLE IF NOT EXISTS wishes (
-       usr                     VARCHAR,
+       email                    VARCHAR,
        heading                  VARCHAR,
        description              VARCHAR,
        imageURL                 VARCHAR,
@@ -61,42 +61,42 @@ case class PostgreSQLPersistence(dbconf: DBConfig) extends Persistence[String, S
 
   case class UserPass(firstName: String, hashedPassword: String)
 
-  override def logIn(user: String, hash: String): Either[String, String] = {
-    val selectUser =
-      sql"""SELECT firstName, hashedPassword FROM users WHERE firstName=$user""".query[UserPass]
+  override def logIn(email: String, hash: String): Either[String, String] = {
+    val selectEmail =
+      sql"""SELECT email, hashedPassword FROM users WHERE email=$email""".query[UserPass]
 
-    val userPass: List[UserPass] = selectUser.list.transact(xa).unsafePerformIO
+    val userPass: List[UserPass] = selectEmail.list.transact(xa).unsafePerformIO
     userPass match {
       case UserPass(_, storedHash) :: Nil if hash.isBcrypted(storedHash) =>
-        getOrCreateSecretFor(user)
+        getOrCreateSecretFor(email)
       case _ => Left("Bad user credentials")
     }
   }
 
   private def newSecret = java.util.UUID.randomUUID.toString
-  private def getOrCreateSecretFor(user: String): Either[String, String] = {
+  private def getOrCreateSecretFor(email: String): Either[String, String] = {
 
     val insertOrUpdate =
       sql"""
-    INSERT INTO secrets (usr, secret, expirationDate)
-      VALUES ($user, $newSecret, CURRENT_TIMESTAMP + INTERVAL '60 seconds')
-    ON CONFLICT (usr) DO UPDATE
+    INSERT INTO secrets (email, secret, expirationDate)
+      VALUES ($email, $newSecret, CURRENT_TIMESTAMP + INTERVAL '60 seconds')
+    ON CONFLICT (email) DO UPDATE
       SET expirationDate = CURRENT_TIMESTAMP + INTERVAL '60 seconds'
          """.update.run
 
     val token: Free[ConnectionOp, (Int, String)] = for {
       updateCount <- insertOrUpdate
-      token       <- sql"SELECT secret FROM secrets WHERE usr=$user".query[String].unique
+      token       <- sql"SELECT secret FROM secrets WHERE email=$email".query[String].unique
     } yield (updateCount, token)
 
     token.transact(xa).unsafePerformIO match {
       case (1, token) => Right(token)
-      case _          => Left(s"Unable to update and retrieve token for $user")
+      case _          => Left(s"Unable to update and retrieve token for $email")
     }
   }
 
-  override def getSecretFor(user: String): Either[String, String] =
-    sql"SELECT secret FROM secrets WHERE usr=$user and now() < expirationDate"
+  override def getSecretFor(email: String): Either[String, String] =
+    sql"SELECT secret FROM secrets WHERE email=$email and now() < expirationDate"
       .query[String]
       .option
       .map(_.toRight("Token expired"))
@@ -105,15 +105,15 @@ case class PostgreSQLPersistence(dbconf: DBConfig) extends Persistence[String, S
 
   override def getUserFor(secret: String): Either[String, String] = {
     val userFor =
-      sql"SELECT usr FROM secrets WHERE secret=$secret AND now() < expirationDate"
+      sql"SELECT email FROM secrets WHERE secret=$secret AND now() < expirationDate"
         .query[String]
         .option
         .map(_.toRight("Token expired"))
     userFor.transact(xa).unsafePerformIO
   }
 
-  override def getEntriesFor(user: String): Either[String, List[WishEntry]] =
-    sql"SELECT usr, heading, description, imageURL, id FROM wishes WHERE usr=$user"
+  override def getEntriesFor(email: String): Either[String, List[WishEntry]] =
+    sql"SELECT email, heading, description, imageURL, id FROM wishes WHERE email=$email"
       .query[WishEntry]
       .list
       .attemptSql
@@ -122,13 +122,13 @@ case class PostgreSQLPersistence(dbconf: DBConfig) extends Persistence[String, S
       .unsafePerformIO
 
   private def entryToTuple(w: WishEntry): (String, String, String, String) =
-    (w.user, w.heading, w.desc, w.image)
+    (w.email, w.heading, w.desc, w.image)
 
-  private def setEntriesFor(user: String, entries: List[WishEntry]) =
+  private def setEntriesFor(email: String, entries: List[WishEntry]) =
     for {
-      deleteCount <- sql"DELETE FROM wishes WHERE usr=$user".update.run
+      deleteCount <- sql"DELETE FROM wishes WHERE email=$email".update.run
       insertCount <- Update[(String, String, String, String)](
-        "INSERT INTO wishes (usr, heading, description, imageURL) VALUES (?, ?, ?, ?)")
+        "INSERT INTO wishes (email, heading, description, imageURL) VALUES (?, ?, ?, ?)")
         .updateMany(entries.map(entryToTuple))
     } yield
       if (insertCount == entries.length) Right(s"Successfully updated $insertCount wishes")
@@ -137,7 +137,7 @@ case class PostgreSQLPersistence(dbconf: DBConfig) extends Persistence[String, S
   override def set(entries: List[WishEntry]): Either[String, String] =
     entries match {
       case Nil     => Right("No wishes to add")
-      case x :: xs => setEntriesFor(x.user, entries).transact(xa).unsafePerformIO
+      case x :: xs => setEntriesFor(x.email, entries).transact(xa).unsafePerformIO
     }
 
   override def finalize(registrationToken: String): Either[String, String] =

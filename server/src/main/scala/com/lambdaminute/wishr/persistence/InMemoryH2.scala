@@ -118,7 +118,7 @@ case class InMemoryH2(dbConfigKey: String, port: Int) extends Persistence[String
       .unsafePerformIO
 
   private def entryToTuple(w: WishEntry): (String, String, String, String) =
-    (w.user, w.heading, w.desc, w.image)
+    (w.email, w.heading, w.desc, w.image)
 
   private def setEntriesFor(user: String, entries: List[WishEntry]) =
     for {
@@ -133,7 +133,7 @@ case class InMemoryH2(dbConfigKey: String, port: Int) extends Persistence[String
   override def set(entries: List[WishEntry]): Either[String, String] =
     entries match {
       case Nil     => Right("No wishes to add")
-      case x :: xs => setEntriesFor(x.user, entries).transact(xa).unsafePerformIO
+      case x :: xs => setEntriesFor(x.email, entries).transact(xa).unsafePerformIO
     }
 
   override def finalize(registrationToken: String): Either[String, String] =

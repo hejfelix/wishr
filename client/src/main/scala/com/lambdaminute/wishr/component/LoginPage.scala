@@ -62,7 +62,7 @@ object LoginPage {
         e => sendLogin >> Callback.info("Login button pressed")
 
       val userNameField: ReactComponentU_ =
-        MuiTextField(floatingLabelText = "username", onChange = handleNameChange)()
+        MuiTextField(floatingLabelText = "e-mail", onChange = handleNameChange)()
       val passwordField: ReactComponentU_ =
         MuiTextField(floatingLabelText = "password",
                      `type` = "password",

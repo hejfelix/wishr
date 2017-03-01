@@ -61,7 +61,7 @@ case class WeakPersistence() extends Persistence[String, String] {
   }
 
   override def getEntriesFor(user: String): Either[String, List[WishEntry]] =
-    Right(wishes.filter(_.user == user))
+    Right(wishes.filter(_.email == user))
 
   override def set(entries: List[WishEntry]): Either[String, String] = {
     wishes = entries

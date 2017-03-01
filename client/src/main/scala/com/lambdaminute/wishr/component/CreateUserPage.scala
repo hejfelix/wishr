@@ -14,7 +14,7 @@ import com.lambdaminute.wishr.serialization.OptionPickler.write
 import cats.SemigroupK
 import cats.data.NonEmptyList
 import cats.syntax.cartesian._
-import com.lambdaminute.wishr.component.WishRAppContainer.{Login, Page}
+import com.lambdaminute.wishr.component.WishRAppContainer.{Action, Login, Page}
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.prefix_<^._
 import org.scalajs.dom.ext.{Ajax, AjaxException}
@@ -32,13 +32,13 @@ object CreateUserPage {
   }
   case class FormatError(reason: String) extends FormError
 
-  def apply(showDialog: (String, Option[Page]) => Unit) =
+  def apply(showDialog: (String, Option[Page], List[Action]) => Unit) =
     ReactComponentB[Props]("CreateUserPage")
       .initialState(State())
       .renderBackend[CreateUserPage.Backend]
       .propsDefault(Props(showDialog))
 
-  case class Props(showDialog: (String, Option[Page]) => Unit)
+  case class Props(showDialog: (String, Option[Page], List[Action]) => Unit)
 
   case class State(
       firstName: Option[String] = None,
@@ -112,18 +112,22 @@ object CreateUserPage {
 
       val firstNameText =
         MuiTextField(floatingLabelText = "First Name",
+                     name = "firstname",
                      onChange = handleInput(str => _.copy(firstName = str)))()
 
       val lastNameText =
         MuiTextField(floatingLabelText = "Last Name",
+                     name = "lastname",
                      onChange = handleInput(str => _.copy(lastName = str)))()
 
       val eMail =
         MuiTextField(floatingLabelText = "e-mail",
+                     `type` = "email",
                      onChange = handleInput(str => _.copy(email = str)))()
 
       val eMailRepeat =
         MuiTextField(floatingLabelText = "repeat e-mail",
+                     `type` = "email",
                      onChange = handleInput(str => _.copy(emailRepeat = str)))()
 
       val password =
@@ -155,15 +159,16 @@ object CreateUserPage {
                     headers = Map("Content-Type" -> "application/json"))
               .onComplete {
                 case Success(msg) =>
-                  val snackText = s"Succesfully created user. Check your inbox to finalize authorization."
-                  P.showDialog(snackText, Option(Login))
+                  val snackText =
+                    s"Succesfully created user. Check your inbox to finalize authorization."
+                  P.showDialog(snackText, Option(Login), Nil)
                 case Failure(AjaxException(xhr)) =>
                   val snackText =
                     s"Error creating user ${xhr.responseType}: ${xhr.responseText}"
-                  P.showDialog(snackText, None)
+                  P.showDialog(snackText, None, Nil)
                 case Failure(err) =>
                   val snackText = s"Error creating user ${err}: ${err.getMessage()}"
-                  P.showDialog(snackText, None)
+                  P.showDialog(snackText, None, Nil)
               }
           })
         })
