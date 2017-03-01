@@ -25,53 +25,50 @@ import concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
 object EditWishesPage {
 
-  def apply(user: String, wishes: List[Wish], theme: MuiTheme, secret: String) =
+  def apply(user: String,
+            wishes: List[Wish],
+            theme: MuiTheme,
+            secret: String,
+            showSnackBar: String => Unit) =
     ReactComponentB[EditWishesPage.Props]("UserCard")
       .initialState(EditWishesPage
         .State(false, user, wishes, None, Nil, theme))
       .renderBackend[EditWishesPage.Backend]
-      .propsDefault(EditWishesPage.Props(user, secret))
+      .propsDefault(EditWishesPage.Props(user, secret, showSnackBar))
 
-  case class Props(owner: String, secret: String)
+  case class Props(owner: String, secret: String, showSnackBar: String => Unit)
 
   case class State(deleteDialogIsOpen: Boolean,
                    user: String,
                    wishes: List[Wish],
                    selectedWish: Option[Wish],
                    editingWishes: List[Wish],
-                   theme: MuiTheme,
-                   snackBarOpen: Boolean = false,
-                   snackBarText: String = "Wish list updated")
+                   theme: MuiTheme)
 
   def dropFirstMatch[T](l: List[T], t: T) =
     l.takeWhile(_ != t) ++ l.dropWhile(_ != t).drop(1)
 
   class Backend($ : BackendScope[Props, State]) {
 
-    val closeSnackBar              = $.modState(_.copy(snackBarOpen = false))
-    def openSnackBar(text: String) = $.modState(_.copy(snackBarOpen = true, snackBarText = text))
-
-    val closeRequested: String => Callback =
-      reason => closeSnackBar >> Callback.info(s"onRequestClose: $reason")
-
     def persist(state: State): State = {
       Ajax
         .post(s"./set",
               write[List[Wish]](state.wishes),
-              headers = Map("Content-Type" -> "application/json", "Authorization" -> $.props.runNow().secret))
+              headers = Map("Content-Type"  -> "application/json",
+                            "Authorization" -> $.props.runNow().secret))
         .onComplete {
           case Success(msg) =>
             val snackText = s"Succesfully persisted state"
             println(snackText)
-            openSnackBar(snackText).runNow()
+            $.props.runNow().showSnackBar(snackText)
           case Failure(AjaxException(xhr)) =>
             val snackText = s"Error persisting state ${xhr.responseType}: ${xhr.responseText}"
             println(snackText)
-            openSnackBar(snackText).runNow()
+            $.props.runNow().showSnackBar(snackText)
           case Failure(err) =>
             val snackText = s"Error persisting state ${err}: ${err.getMessage()}"
             println(snackText)
-            openSnackBar(snackText).runNow()
+            $.props.runNow().showSnackBar(snackText)
         }
 
       state
@@ -169,26 +166,27 @@ object EditWishesPage {
       )
 
       lazy val actions: ReactNode = List(
-        MuiFlatButton(key = "1", label = "Cancel", primary = true, onTouchTap = handleDialogCancel)(),
-        MuiFlatButton(key = "2", label = "Delete", secondary = true, onTouchTap = handleDialogSubmit)()
+        MuiFlatButton(key = "1",
+                      label = "Cancel",
+                      primary = true,
+                      onTouchTap = handleDialogCancel)(),
+        MuiFlatButton(key = "2",
+                      label = "Delete",
+                      secondary = true,
+                      onTouchTap = handleDialogSubmit)()
       )
 
       lazy val title = <.h2(s"Welcome to the wish list of ${P.owner}")(^.cls := "edit-page-title")
 
       lazy val addWishButton =
-        MuiFloatingActionButton(key = "floating1", onMouseUp = handleAddWish, className = "add-wish")(
+        MuiFloatingActionButton(key = "floating1",
+                                onMouseUp = handleAddWish,
+                                className = "add-wish")(
           ImageControlPoint(
             )())
 
-      val snackBar = MuiSnackbar(
-        autoHideDuration = 2500,
-        message = S.snackBarText,
-        onRequestClose = closeRequested,
-        open = S.snackBarOpen
-      )()
-
       MuiMuiThemeProvider(muiTheme = S.theme)(
-        <.div(_react_fragReactNode(addWishButton), snackBar, <.div(title, deleteDialog, wishCards)))
+        <.div(_react_fragReactNode(addWishButton), <.div(title, deleteDialog, wishCards)))
     }
   }
 

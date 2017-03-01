@@ -14,12 +14,12 @@ import com.lambdaminute.wishr.serialization.OptionPickler.write
 import cats.SemigroupK
 import cats.data.NonEmptyList
 import cats.syntax.cartesian._
+import com.lambdaminute.wishr.component.WishRAppContainer.{Login, Page}
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.prefix_<^._
 import org.scalajs.dom.ext.{Ajax, AjaxException}
 
 import scala.util.{Failure, Success}
-
 import concurrent.ExecutionContext.Implicits.global
 
 object CreateUserPage {
@@ -32,13 +32,13 @@ object CreateUserPage {
   }
   case class FormatError(reason: String) extends FormError
 
-  def apply() =
+  def apply(showDialog: (String, Option[Page]) => Unit) =
     ReactComponentB[Props]("CreateUserPage")
       .initialState(State())
       .renderBackend[CreateUserPage.Backend]
-      .propsDefault(Props())
+      .propsDefault(Props(showDialog))
 
-  case class Props()
+  case class Props(showDialog: (String, Option[Page]) => Unit)
 
   case class State(
       firstName: Option[String] = None,
@@ -119,7 +119,8 @@ object CreateUserPage {
                      onChange = handleInput(str => _.copy(lastName = str)))()
 
       val eMail =
-        MuiTextField(floatingLabelText = "e-mail", onChange = handleInput(str => _.copy(email = str)))()
+        MuiTextField(floatingLabelText = "e-mail",
+                     onChange = handleInput(str => _.copy(email = str)))()
 
       val eMailRepeat =
         MuiTextField(floatingLabelText = "repeat e-mail",
@@ -154,15 +155,15 @@ object CreateUserPage {
                     headers = Map("Content-Type" -> "application/json"))
               .onComplete {
                 case Success(msg) =>
-                  val snackText = s"Succesfully created user. Check your inbox $msg"
-                  println(snackText)
+                  val snackText = s"Succesfully created user. Check your inbox to finalize authorization."
+                  P.showDialog(snackText, Option(Login))
                 case Failure(AjaxException(xhr)) =>
                   val snackText =
                     s"Error creating user ${xhr.responseType}: ${xhr.responseText}"
-                  println(snackText)
+                  P.showDialog(snackText, None)
                 case Failure(err) =>
                   val snackText = s"Error creating user ${err}: ${err.getMessage()}"
-                  println(snackText)
+                  P.showDialog(snackText, None)
               }
           })
         })

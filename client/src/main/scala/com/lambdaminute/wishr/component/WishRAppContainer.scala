@@ -21,6 +21,7 @@ import chandu0101.scalajs.react.components.Implicits._
 import japgolly.scalajs.react.vdom.Frag
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.scalajs.js
 import scala.util.{Failure, Success}
 
 object WishRAppContainer {
@@ -41,7 +42,11 @@ object WishRAppContainer {
                    authorizationSecret: Option[String] = None,
                    theme: MuiTheme = Mui.Styles.getMuiTheme(Mui.Styles.LightRawTheme),
                    errorMessage: Option[String] = None,
-                   wishes: List[Wish] = Nil)
+                   wishes: List[Wish] = Nil,
+                   snackBarText: String = "",
+                   snackBarOpen: Boolean = false,
+                   dialogText: String = "",
+                   dialogOpen: Boolean = false)
 
   class Backend($ : BackendScope[_, State]) {
 
@@ -60,6 +65,17 @@ object WishRAppContainer {
 
     def render(S: State) = {
 
+      val showSnackBar: (String) => Unit = (withText: String) =>
+        $.modState(_.copy(snackBarText = withText, snackBarOpen = true)).runNow()
+
+      def showDialog(withText: String, changePage: Option[Page] = None) =
+        changePage match {
+          case Some(page) =>
+            $.modState(_.copy(dialogText = withText, dialogOpen = true, currentPage = page))
+              .runNow()
+          case None => $.modState(_.copy(dialogText = withText, dialogOpen = true)).runNow()
+        }
+
       def fetchWishes() =
         Ajax
           .get(s"./entries",
@@ -77,17 +93,42 @@ object WishRAppContainer {
           }
 
       val page: ReactElement = S.currentPage match {
-        case CreateUser => CreateUserPage().build()
+        case CreateUser => CreateUserPage(showDialog).build()
         case Login      => LoginPage(handleLogin, $.modState(_.copy(currentPage = CreateUser))).build()
         case Fetching =>
           fetchWishes()
           <.div("Downloading wishes...")
         case WishList =>
-          EditWishesPage(S.userName.mkString, S.wishes, S.theme, S.authorizationSecret.mkString)
+          EditWishesPage(S.userName.mkString,
+                         S.wishes,
+                         S.theme,
+                         S.authorizationSecret.mkString,
+                         showSnackBar)
             .build()
       }
 
-      MuiMuiThemeProvider(muiTheme = S.theme)(page)
+      val snackBar = MuiSnackbar(
+        autoHideDuration = 2500,
+        message = S.snackBarText,
+        onRequestClose = (x: String) => $.modState(_.copy(snackBarOpen = false)),
+        open = S.snackBarOpen
+      )()
+
+      val muiAppBar = MuiAppBar(
+        title = "WishR",
+        showMenuIconButton = false
+      )()
+
+      val dismissDialogButton =
+        MuiFlatButton(label = "Ok",
+                      onClick = (r: ReactEventH) => $.modState(_.copy(dialogOpen = false)))()
+      val dialog = MuiDialog(title = S.dialogText,
+                             open = S.dialogOpen,
+                             actions = js.Array(dismissDialogButton),
+                             onRequestClose =
+                               (b: Boolean) => $.modState(_.copy(dialogOpen = false)))()
+
+      MuiMuiThemeProvider(muiTheme = S.theme)(<.div(muiAppBar, page, snackBar, dialog))
     }
 
   }
