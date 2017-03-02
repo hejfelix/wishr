@@ -12,12 +12,14 @@ import cats.implicits._
 import fs2.interop.cats._
 import com.github.t3hnar.bcrypt._
 import com.lambdaminute.wishr.model.{CreateUserRequest, WishEntry}
+import fs2.Task
+import cats.data.EitherT
 
 case class PostgreSQLPersistence(dbconf: DBConfig) extends Persistence[String, String] {
 
-  val xa = DriverManagerTransactor[IOLite](
+  val xa = DriverManagerTransactor[Task](
     "org.postgresql.Driver",
-    dbconf.url+"?sslmode=require",
+    dbconf.url + "?sslmode=require",
     dbconf.user,
     dbconf.password
   )
@@ -52,29 +54,37 @@ case class PostgreSQLPersistence(dbconf: DBConfig) extends Persistence[String, S
       )
    """.update
 
-  val createUsersResult: Int = createUsersTable.run.transact(xa).unsafePerformIO
+  val createUsersResult: Int = createUsersTable.run.transact(xa).unsafeRun()
   println(s"Create users: $createUsersResult")
-  val createSecretsResult: Int = createSecretsTable.run.transact(xa).unsafePerformIO
+  val createSecretsResult: Int = createSecretsTable.run.transact(xa).unsafeRun()
   println(s"Create secrets: $createSecretsResult")
-  val createWishesResult: Int = createWishesTable.run.transact(xa).unsafePerformIO
+  val createWishesResult: Int = createWishesTable.run.transact(xa).unsafeRun()
   println(s"Create wishes: $createWishesResult")
 
   case class UserPass(firstName: String, hashedPassword: String)
 
-  override def logIn(email: String, hash: String): Either[String, String] = {
+  override def logIn(email: String, hash: String): PersistenceResponse[String] = {
     val selectEmail =
       sql"""SELECT email, hashedPassword FROM users WHERE email=$email""".query[UserPass]
 
-    val userPass: List[UserPass] = selectEmail.list.transact(xa).unsafePerformIO
-    userPass match {
-      case UserPass(_, storedHash) :: Nil if hash.isBcrypted(storedHash) =>
-        getOrCreateSecretFor(email)
-      case _ => Left("Bad user credentials")
-    }
+    val userPass: Task[Option[UserPass]] =
+      selectEmail.option
+        .transact(xa)
+
+    val eitherTUserPass: EitherT[Task, String, String] =
+      EitherT(userPass.map {
+        case Some(UserPass(email, hpw)) if hash.isBcrypted(hpw) => Right(email)
+        case _                                                  => Left("Bad credentials")
+      })
+
+    for {
+      mail  <- eitherTUserPass
+      token <- getOrCreateSecretFor(mail)
+    } yield token
   }
 
   private def newSecret = java.util.UUID.randomUUID.toString
-  private def getOrCreateSecretFor(email: String): Either[String, String] = {
+  private def getOrCreateSecretFor(email: String): PersistenceResponse[String] = {
 
     val insertOrUpdate =
       sql"""
@@ -84,47 +94,47 @@ case class PostgreSQLPersistence(dbconf: DBConfig) extends Persistence[String, S
       SET expirationDate = CURRENT_TIMESTAMP + INTERVAL '60 seconds'
          """.update.run
 
-    val token: Free[ConnectionOp, (Int, String)] = for {
+    val token: Task[(Int, String)] = (for {
       updateCount <- insertOrUpdate
       token       <- sql"SELECT secret FROM secrets WHERE email=$email".query[String].unique
-    } yield (updateCount, token)
+    } yield (updateCount, token)).transact(xa)
 
-    token.transact(xa).unsafePerformIO match {
+    EitherT(token map {
       case (1, token) => Right(token)
       case _          => Left(s"Unable to update and retrieve token for $email")
-    }
+    })
   }
 
-  override def getSecretFor(email: String): Either[String, String] =
-    sql"SELECT secret FROM secrets WHERE email=$email and now() < expirationDate"
-      .query[String]
-      .option
-      .map(_.toRight("Token expired"))
-      .transact(xa)
-      .unsafePerformIO
+  override def getSecretFor(email: String): PersistenceResponse[String] =
+    EitherT(
+      sql"SELECT secret FROM secrets WHERE email=$email and now() < expirationDate"
+        .query[String]
+        .option
+        .map(_.toRight("Token expired"))
+        .transact(xa))
 
-  override def getUserFor(secret: String): Either[String, String] = {
-    val userFor =
+  override def getUserFor(secret: String): PersistenceResponse[String] =
+    EitherT(
       sql"SELECT email FROM secrets WHERE secret=$secret AND now() < expirationDate"
         .query[String]
         .option
         .map(_.toRight("Token expired"))
-    userFor.transact(xa).unsafePerformIO
-  }
+        .transact(xa))
 
-  override def getEntriesFor(email: String): Either[String, List[WishEntry]] =
-    sql"SELECT email, heading, description, imageURL, id FROM wishes WHERE email=$email"
-      .query[WishEntry]
-      .list
-      .attemptSql
-      .map(_.left.map(_.getMessage))
-      .transact(xa)
-      .unsafePerformIO
+  override def getEntriesFor(email: String): PersistenceResponse[List[WishEntry]] =
+    EitherT(
+      sql"SELECT email, heading, description, imageURL, id FROM wishes WHERE email=$email"
+        .query[WishEntry]
+        .list
+        .attemptSql
+        .map(_.left.map(_.getMessage))
+        .transact(xa))
 
   private def entryToTuple(w: WishEntry): (String, String, String, String) =
     (w.email, w.heading, w.desc, w.image)
 
-  private def setEntriesFor(email: String, entries: List[WishEntry]) =
+  private def setEntriesFor(email: String,
+                            entries: List[WishEntry]): Free[ConnectionOp, Either[String, String]] =
     for {
       deleteCount <- sql"DELETE FROM wishes WHERE email=$email".update.run
       insertCount <- Update[(String, String, String, String)](
@@ -134,32 +144,32 @@ case class PostgreSQLPersistence(dbconf: DBConfig) extends Persistence[String, S
       if (insertCount == entries.length) Right(s"Successfully updated $insertCount wishes")
       else Left("Failed updating wishes")
 
-  override def set(entries: List[WishEntry]): Either[String, String] =
-    entries match {
-      case Nil     => Right("No wishes to add")
-      case x :: xs => setEntriesFor(x.email, entries).transact(xa).unsafePerformIO
-    }
+  override def set(entries: List[WishEntry]): PersistenceResponse[String] =
+    EitherT(entries match {
+      case Nil     => Task.now(Right("No wishes to add"))
+      case x :: xs => setEntriesFor(x.email, entries).transact(xa)
+    })
 
-  override def finalize(registrationToken: String): Either[String, String] =
-    sql"UPDATE users SET finalized=TRUE WHERE registrationToken=$registrationToken".update.run
-      .map(n =>
-        if (n == 1) Right("Successfully activated user")
-        else Left("No user for that token was found"))
-      .transact(xa)
-      .unsafePerformIO
+  override def finalize(registrationToken: String): PersistenceResponse[String] =
+    EitherT(
+      sql"UPDATE users SET finalized=TRUE WHERE registrationToken=$registrationToken".update.run
+        .map(n =>
+          if (n == 1) Right("Successfully activated user")
+          else Left("No user for that token was found"))
+        .transact(xa))
 
   override def createUser(createUserRequest: CreateUserRequest,
-                          activationToken: String): Either[String, String] = {
+                          activationToken: String): PersistenceResponse[String] = {
     val up = Update[DBUser](
       "insert into users (firstName, lastName, email, hashedPassword, registrationToken, " +
         "finalized) values (?, ?, ?, ?, ?, ?)")
     val c                              = createUserRequest
     val dbu                            = DBUser(c.firstName, c.lastName, c.email, c.password.bcrypt, activationToken, false)
     val insertQuery: ConnectionIO[Int] = up.run(dbu)
-    val result: Int                    = insertQuery.transact(xa).unsafePerformIO
-    result match {
+    val result                   = insertQuery.transact(xa)
+    EitherT(result.map {
       case 1 => Right("Successfully created user")
       case _ => Left("Failed creating user in db")
-    }
+    })
   }
 }

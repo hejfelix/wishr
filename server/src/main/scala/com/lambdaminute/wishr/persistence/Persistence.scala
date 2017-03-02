@@ -1,20 +1,25 @@
 package com.lambdaminute.wishr.persistence
 
+import cats.data.EitherT
 import com.lambdaminute.wishr.model.{CreateUserRequest, WishEntry}
+import fs2.Task
 
-trait Persistence[Error,Secret] {
+trait Persistence[Error, Secret] {
 
-  def logIn(user: String, hash: String): Either[Error, String]
+  type PersistenceResponse[T] = EitherT[Task, Error, T]
 
-  def getSecretFor(user: String): Either[Error, Secret]
+  def logIn(user: String, hash: String): PersistenceResponse[String]
 
-  def getUserFor(secret: String): Either[Error, String]
+  def getSecretFor(user: String): PersistenceResponse[Secret]
 
-  def getEntriesFor(user: String): Either[Error, List[WishEntry]]
+  def getUserFor(secret: String): PersistenceResponse[String]
 
-  def set(entries: List[WishEntry]): Either[Error, String]
+  def getEntriesFor(user: String): PersistenceResponse[List[WishEntry]]
 
-  def finalize(registrationToken: String): Either[Error, String]
+  def set(entries: List[WishEntry]): PersistenceResponse[String]
 
-  def createUser(createUserRequest: CreateUserRequest, activationToken: String): Either[Error, String]
+  def finalize(registrationToken: String): PersistenceResponse[String]
+
+  def createUser(createUserRequest: CreateUserRequest,
+                 activationToken: String): PersistenceResponse[String]
 }

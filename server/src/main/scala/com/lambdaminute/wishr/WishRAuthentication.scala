@@ -1,7 +1,7 @@
 package com.lambdaminute.wishr
 
 import cats.arrow.Choice
-import cats.data.Kleisli
+import cats.data.{EitherT, Kleisli}
 import com.lambdaminute.wishr.model.{LoginRequest, User}
 import com.lambdaminute.wishr.persistence.Persistence
 import fs2.Task
@@ -27,28 +27,34 @@ case class WishRAuthentication(persistence: Persistence[String, String]) extends
   //Authenticate the user
   val authUser: Kleisli[Task, Request, Either[String, User]] = Kleisli(
     request => {
-      println("HELLOOOO")
       trace(request)
       if (request.method == POST && request.pathInfo == "/login")
-        handleLogin(request)
-      else
-        Task.now(for {
-          secret   <- request.headers.get(Authorization).map(_.value).toRight("No auth header found")
-          username <- persistence.getUserFor(secret).map(trace)
-        } yield User(username, secret))
+        handleLogin(request).value
+      else {
+        EitherT[Task, String, String](
+          Task.now(
+            request.headers.get(Authorization).map(_.value).toRight("No auth header found")))
+          .flatMap(userFor)
+          .value
+      }
     }
   )
 
-  private def handleLogin(request: Request): Task[Either[String, User]] =
-    request
-      .as(jsonOf[LoginRequest])
-      .map {
-        case LoginRequest(user, password) =>
-          persistence.logIn(user, password).map(trace).map(secret => User(user, secret))
+  private def userFor(secret: String): EitherT[Task, String, User] =
+    persistence.getUserFor(secret).map { user =>
+      User(user, secret)
+    }
+
+  private def handleLogin(request: Request): EitherT[Task, String, User] =
+    EitherT[Task, String, LoginRequest](request.as(jsonOf[LoginRequest]).map(Right.apply))
+      .flatMap { lr =>
+        persistence
+          .logIn(lr.user, lr.password)
+          .map(trace)
+          .map(secret => User(lr.user, secret))
       }
 
   val onAuthFailure: AuthedService[String] = Kleisli(req => {
-    println("Blaaa")
     Forbidden(req.authInfo)
   })
 
@@ -64,5 +70,6 @@ case class WishRAuthentication(persistence: Persistence[String, String]) extends
         })
         .compose(AuthedRequest(authUser.run))
   }
+
   def middleware: AuthMiddleware[User] = authWithFailure(authUser, onAuthFailure)
 }

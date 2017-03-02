@@ -2,6 +2,7 @@ package com.lambdaminute
 
 import java.io.File
 
+import cats.data.EitherT
 import com.lambdaminute.wishr.WishRAuthentication
 import com.lambdaminute.wishr.config.ApplicationConf
 import com.lambdaminute.wishr.model._
@@ -15,6 +16,7 @@ import org.http4s.circe.CirceInstances
 import org.http4s.dsl._
 import org.http4s.server.syntax._
 import cats.implicits._
+import fs2.interop.cats._
 
 case class WishRService(persistence: Persistence[String, String],
                         authentication: WishRAuthentication,
@@ -23,7 +25,7 @@ case class WishRService(persistence: Persistence[String, String],
 
   override protected def defaultPrinter: Printer = Printer.spaces2
 
-  def serveFile(path: String, request: Request) =
+  def serveFile(path: String, request: Request): Task[Response] =
     StaticFile
       .fromFile(new File(path), Some(request))
       .map(Task.now)
@@ -53,18 +55,19 @@ case class WishRService(persistence: Persistence[String, String],
       println(s"""Creating ${createUserRequest.copy(password = "")}""")
 
       val token = java.util.UUID.randomUUID.toString
-      val userCreated =
-        persistence.createUser(createUserRequest, token)
+      val userCreated: Task[Either[String, String]] =
+        persistence.createUser(createUserRequest, token).value
 
-      userCreated match {
+      userCreated.flatMap {
         case Left(err) => BadRequest(err)
         case Right(s) =>
           println(s"Sending activation email to ${createUserRequest.email}")
           sendActivationEmail(createUserRequest.email, token)
           Ok(s)
       }
+
     case GET -> Root / finalize / token =>
-      persistence.finalize(token) match {
+      persistence.finalize(token).value.flatMap {
         case Left(err) => BadRequest(err)
         case Right(s)  => Ok(s)
       }
@@ -85,25 +88,25 @@ case class WishRService(persistence: Persistence[String, String],
       getEntriesFor(user.name)
 
     case request @ (POST -> Root / "set" as user) =>
-      val wishes: List[Wish] = request.req.as(jsonOf[List[Wish]]).unsafeRun()
-      setWishesFor(wishes, user)
+      val wishes: Task[List[Wish]] = request.req.as(jsonOf[List[Wish]])
 
+      wishes.flatMap(w => setWishesFor(w, user))
   }
 
   private def getEntriesFor(username: String) = {
-    val entries: Either[String, List[WishEntry]] = persistence.getEntriesFor(username)
+    val entries: persistence.PersistenceResponse[List[WishEntry]] =
+      persistence.getEntriesFor(username)
     println(s"Getting entries for ${username}")
 
-    val wishes: Either[String, List[Wish]] = entries.map {
-      case actualEntries =>
-        actualEntries.map {
-          case WishEntry(_, heading, desc, image, id) => Wish(heading, desc, Option(image))
-        }
+    val wishes: EitherT[Task, String, List[Wish]] = entries.map {
+      _.map {
+        case WishEntry(_, heading, desc, image, id) => Wish(heading, desc, Option(image))
+      }
     }
 
     println(s"Found wishes $wishes")
 
-    wishes match {
+    wishes.value.flatMap {
       case Right(wishes) => Ok(wishes)(jsonEncoderOf[List[Wish]])
       case Left(error)   => Ok(error)
     }
@@ -111,14 +114,14 @@ case class WishRService(persistence: Persistence[String, String],
 
   private def setWishesFor(wishes: List[Wish], user: User) = {
 
-    val entries = wishes.map {
+    val entries: List[WishEntry] = wishes.map {
       case Wish(heading, desc, image) =>
         WishEntry(user.name, heading, desc, image.getOrElse(""), -1)
     }
 
     println(s"Setting wishes for $user: ${wishes.mkString}")
 
-    persistence.set(entries) match {
+    persistence.set(entries).value.flatMap {
       case Right(addResult) => Ok(addResult)
       case Left(err)        => InternalServerError(err)
     }

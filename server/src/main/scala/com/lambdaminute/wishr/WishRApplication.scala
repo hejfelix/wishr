@@ -3,7 +3,7 @@ package com.lambdaminute.wishr
 import com.lambdaminute.WishRService
 import com.lambdaminute.wishr.config.Module.ModuleOr
 import com.lambdaminute.wishr.config._
-import com.lambdaminute.wishr.persistence.{InMemoryH2, Persistence}
+import com.lambdaminute.wishr.persistence.Persistence
 import fs2.Task
 import org.http4s.server.blaze.BlazeBuilder
 import org.http4s.server.{Server, ServerApp}
