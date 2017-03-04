@@ -14,6 +14,10 @@ trait Persistence[Error, Secret] {
 
   def getUserFor(secret: String): PersistenceResponse[String]
 
+  def emailForSecretURL(secretURL: String): PersistenceResponse[String]
+
+  def getSharingURL(email: String): PersistenceResponse[String]
+
   def getEntriesFor(user: String): PersistenceResponse[List[WishEntry]]
 
   def set(entries: List[WishEntry]): PersistenceResponse[String]

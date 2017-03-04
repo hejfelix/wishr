@@ -14,7 +14,7 @@ docker run --rm -it -v "$PWD":/app schodemeiss/npm-tools npm install
 #Webpack JS dependencies
 docker run --rm -it -v "$PWD":/app schodemeiss/npm-tools webpack
 
-cp index.html ./server/target/pack/
+cp *.html ./server/target/pack/
 cp styles.css ./server/target/pack/
 mkdir -p ./server/target/pack/client/target/scala-2.11/
 cp ./client/target/scala-2.11/client-fastopt.js ./server/target/pack/client/target/scala-2.11/client-fastopt.js

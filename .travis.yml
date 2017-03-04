@@ -14,7 +14,8 @@ before_install:
   - docker run --rm -it -v "$PWD":/app schodemeiss/npm-tools webpack
 
 script:
-  - sudo cp index.html ./server/target/pack/
+  - sudo sed -i .bk 's/0.0.0/0.0.$TRAVIS_BUILD_NUMBER/' index.html
+  - sudo cp *.html ./server/target/pack/
   - sudo cp styles.css ./server/target/pack/
   - sudo mkdir -p ./server/target/pack/client/target/scala-2.11/
   - sudo cp ./client/target/scala-2.11/client-fastopt.js ./server/target/pack/client/target/scala-2.11/client-fastopt.js

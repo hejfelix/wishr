@@ -31,8 +31,6 @@ case class WishRService(persistence: Persistence[String, String],
       .map(Task.now)
       .getOrElse(NotFound())
 
-
-
   def service: Service[Request, MaybeResponse] =
     unauthedService orElse authentication.middleware(authedService)
 
@@ -41,6 +39,22 @@ case class WishRService(persistence: Persistence[String, String],
     case GET -> Root / "status" =>
       Ok()
 
+    case GET -> Root / "shared-wishes" / secretURL =>
+      println(s"Fetching shared wishes for url $secretURL")
+      val entries: EitherT[Task, String, List[WishEntry]] = for {
+        email   <- persistence.emailForSecretURL(secretURL)
+        entries <- persistence.getEntriesFor(email)
+      } yield entries
+
+      entries.value.flatMap {
+        case Right(wishes) => Ok(wishes)(jsonEncoderOf[List[WishEntry]])
+        case Left(error)   => Ok(error)
+      }
+    case request @ GET -> Root if request.params.contains("sharedURL") =>
+      val secretURL = request.params.get("sharedURL").get
+      println(s"Fetching wishes for secret $secretURL")
+      serveFile("index-shared.html", request)
+        .map(_.addCookie(Cookie("secretURL", secretURL)))
     case request @ (GET -> Root) =>
       println(s"Got request for root")
       serveFile("./index.html" + request.pathInfo, request)
@@ -82,7 +96,15 @@ case class WishRService(persistence: Persistence[String, String],
 
   def authedService: AuthedService[User] = AuthedService {
 
-    case request @ (POST -> Root / "login" as user) =>
+    case request @ GET -> Root / "sharingURL" as user =>
+      persistence.getSharingURL(user.name).value.flatMap {
+        case Right(secret) =>
+          val url = s"${configuration.rootPath}/?sharedURL=$secret"
+          Ok(url)
+        case Left(err)     => NotFound(err)
+      }
+
+    case request @ POST -> Root / "login" as user =>
       println("LOGIN REQUEST" + request)
       Ok(user.secret)
         .addCookie(Cookie("authcookie", user.secret))
@@ -91,7 +113,7 @@ case class WishRService(persistence: Persistence[String, String],
     case GET -> Root / "entries" as user =>
       getEntriesFor(user.name)
 
-    case request @ (POST -> Root / "set" as user) =>
+    case request @ POST -> Root / "set" as user =>
       val wishes: Task[List[Wish]] = request.req.as(jsonOf[List[Wish]])
 
       wishes.flatMap(w => setWishesFor(w, user))
@@ -104,7 +126,7 @@ case class WishRService(persistence: Persistence[String, String],
 
     val wishes: EitherT[Task, String, List[Wish]] = entries.map {
       _.map {
-        case WishEntry(_, heading, desc, image, id) => Wish(heading, desc, Option(image))
+        case WishEntry(_, heading, desc, image, index, id) => Wish(heading, desc, Option(image))
       }
     }
 
@@ -118,9 +140,9 @@ case class WishRService(persistence: Persistence[String, String],
 
   private def setWishesFor(wishes: List[Wish], user: User) = {
 
-    val entries: List[WishEntry] = wishes.map {
-      case Wish(heading, desc, image) =>
-        WishEntry(user.name, heading, desc, image.getOrElse(""), -1)
+    val entries: List[WishEntry] = wishes.zipWithIndex.map {
+      case (Wish(heading, desc, image), index) =>
+        WishEntry(user.name, heading, desc, image.getOrElse(""), index, -1)
     }
 
     println(s"Setting wishes for $user: ${wishes.mkString}")

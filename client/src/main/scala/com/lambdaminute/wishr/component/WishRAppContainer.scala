@@ -229,14 +229,33 @@ object WishRAppContainer {
           $.modState(_.copy(authorizationSecret = None, userName = None, currentPage = Login))
       )()
 
+      def showSharingLink =
+        Ajax
+          .get("/sharingURL",
+               headers = Map("Content-Type"  -> "application/json",
+                             "Authorization" -> S.authorizationSecret.mkString))
+          .onComplete {
+            case Success(msg) =>
+              showDialog(msg.responseText)
+            case Failure(err) =>
+              showSnackBar(err.getMessage)
+          }
+
+      val getLinkForSharing = MuiMenuItem(
+        key = "getSharingLink",
+        primaryText = "Get link for sharing",
+        onTouchTap = (r: ReactEventH) => Callback(showSharingLink)
+      )()
+
       def toggleDrawerOpen =
         (b: Boolean, s: String) =>
           Callback.info(s"toggle drawer $b $s") >> $.modState(s =>
             s.copy(drawerOpen = !s.drawerOpen))
 
-      val drawer = MuiDrawer(open = S.drawerOpen,
-                             docked = false,
-                             onRequestChange = toggleDrawerOpen)(title, version, logout)
+      val drawer = MuiDrawer(
+        open = S.drawerOpen,
+        docked = false,
+        onRequestChange = toggleDrawerOpen)(title, version, logout, getLinkForSharing)
 
       val dialog = MuiDialog(
         title = S.dialogText,

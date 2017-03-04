@@ -10,7 +10,13 @@ case class WeakPersistence() extends Persistence[String, String] {
   var wishes: List[WishEntry]       = Nil
   var userSecrets: List[UserSecret] = Nil
   var users: List[DBUser] = List(
-    DBUser("Felix", "Palludan Hargreaves", "", "abekatten".bcrypt, "", true))
+    DBUser("Felix",
+           "Palludan Hargreaves",
+           "",
+           "abekatten".bcrypt,
+           java.util.UUID.randomUUID.toString,
+           "",
+           true))
 
   def getUserFor(secret: String): PersistenceResponse[String] = ???
 //    userSecrets
@@ -64,7 +70,7 @@ case class WeakPersistence() extends Persistence[String, String] {
   override def getEntriesFor(user: String): PersistenceResponse[List[WishEntry]] = ???
 //    Right(wishes.filter(_.email == user))
 
-  override def set(entries: List[WishEntry]): PersistenceResponse[String] =  ???
+  override def set(entries: List[WishEntry]): PersistenceResponse[String] = ???
 //  {
 //    wishes = entries
 //    Right(wishes.mkString("\n"))
@@ -93,4 +99,7 @@ case class WeakPersistence() extends Persistence[String, String] {
 //      users = user +: users
 //      Right("Successfully created user")
 //    }
+  override def emailForSecretURL(secretURL: String): PersistenceResponse[String] = ???
+
+  override def getSharingURL(email: String): PersistenceResponse[String] = ???
 }

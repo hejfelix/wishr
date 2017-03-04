@@ -23,14 +23,18 @@ object WishCard {
                    onFinishedUpdate: Wish => Callback,
                    startingState: Wish,
                    index: Int,
-                   editing: Boolean)
+                   editing: Boolean,
+                   readOnly: Boolean)
 
+  def fromWishReadOnly(w: Wish): ReactComponentU[Props, State, Backend, TopNode] =
+    fromWish(w, Callback.empty, 0, false, Callback.empty, _ => Callback.empty, true)
   def fromWish(wish: Wish,
                openDeleteDialog: Callback,
                index: Int,
                editing: Boolean,
                startEditing: Callback,
-               onFinishedUpdate: Wish => Callback) =
+               onFinishedUpdate: Wish => Callback,
+               readOnly: Boolean = false) =
     ReactComponentB[WishCard.Props]("WishCard")
       .initialState(WishCard.State(wish))
       .renderBackend[WishCard.Backend]
@@ -41,7 +45,8 @@ object WishCard {
           onFinishedUpdate,
           wish,
           index,
-          editing
+          editing,
+          readOnly
         )
       }
       .build()
@@ -152,20 +157,21 @@ object WishCard {
         MuiFlatButton(key = "Cancel",
                       label = "Cancel",
                       secondary = true,
-                      onClick = (rh: ReactEventH) =>
-                        props.onFinishedUpdate(props.startingState))()
+                      onClick = (rh: ReactEventH) => props.onFinishedUpdate(props.startingState))()
       )
 
       println(s"Adding wish number ${props.index} with text ${S.wish.heading}")
 
-      MuiPaper(zDepth = ZDepth._4,
-               key = props.index.toString,
-               transitionEnabled = true)(
-        <.div(
-          ^.cls := "WishCard",
-          if (props.editing) editingContent else wishCardContent,
-          if (props.editing) editCardActions else wishCardActions
-        )
+      val content =
+        if (props.readOnly) <.div(^.cls := "WishCard", wishCardContent)
+        else
+          <.div(
+            ^.cls := "WishCard",
+            if (props.editing) editingContent else wishCardContent,
+            if (props.editing) editCardActions else wishCardActions
+          )
+      MuiPaper(zDepth = ZDepth._4, key = props.index.toString, transitionEnabled = true)(
+        content
       )
 
     }

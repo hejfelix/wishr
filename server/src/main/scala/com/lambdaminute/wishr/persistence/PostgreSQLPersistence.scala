@@ -31,6 +31,7 @@ case class PostgreSQLPersistence(dbconf: DBConfig) extends Persistence[String, S
       lastName           VARCHAR,
       email              VARCHAR UNIQUE,
       hashedPassword     VARCHAR,
+      secretURL          VARCHAR,
       registrationToken  VARCHAR,
       finalized          BOOLEAN
       )
@@ -50,6 +51,7 @@ case class PostgreSQLPersistence(dbconf: DBConfig) extends Persistence[String, S
        heading                  VARCHAR,
        description              VARCHAR,
        imageURL                 VARCHAR,
+       index                    INTEGER,
        id                       SERIAL
       )
    """.update
@@ -89,9 +91,9 @@ case class PostgreSQLPersistence(dbconf: DBConfig) extends Persistence[String, S
     val insertOrUpdate =
       sql"""
     INSERT INTO secrets (email, secret, expirationDate)
-      VALUES ($email, $newSecret, CURRENT_TIMESTAMP + INTERVAL '60 seconds')
+      VALUES ($email, $newSecret, CURRENT_TIMESTAMP + INTERVAL '15 minutes')
     ON CONFLICT (email) DO UPDATE
-      SET expirationDate = CURRENT_TIMESTAMP + INTERVAL '60 seconds'
+      SET expirationDate = CURRENT_TIMESTAMP + INTERVAL '15 minutes'
          """.update.run
 
     val token: Task[(Int, String)] = (for {
@@ -107,7 +109,7 @@ case class PostgreSQLPersistence(dbconf: DBConfig) extends Persistence[String, S
 
   override def getSecretFor(email: String): PersistenceResponse[String] =
     EitherT(
-      sql"SELECT secret FROM secrets WHERE email=$email and now() < expirationDate"
+      sql"SELECT secret FROM secrets WHERE email='$email' and CURRENT_TIMESTAMP < expirationDate"
         .query[String]
         .option
         .map(_.toRight("Token expired"))
@@ -115,30 +117,48 @@ case class PostgreSQLPersistence(dbconf: DBConfig) extends Persistence[String, S
 
   override def getUserFor(secret: String): PersistenceResponse[String] =
     EitherT(
-      sql"SELECT email FROM secrets WHERE secret=$secret AND now() < expirationDate"
+      sql"SELECT email FROM secrets WHERE secret=$secret AND CURRENT_TIMESTAMP < expirationDate"
         .query[String]
         .option
         .map(_.toRight("Token expired"))
         .transact(xa))
 
+  override def emailForSecretURL(secretURL: String): PersistenceResponse[String] =
+    EitherT(
+      sql"SELECT email FROM users WHERE secretURL=$secretURL"
+        .query[String]
+        .option
+        .map(_.toRight("No user for secret URL"))
+        .transact(xa)
+    )
+
+  override def getSharingURL(email: String): PersistenceResponse[String] =
+    EitherT(
+      sql"SELECT secretURL FROM users WHERE email=$email"
+        .query[String]
+        .option
+        .map(_.toRight("User not found"))
+        .transact(xa)
+    )
+
   override def getEntriesFor(email: String): PersistenceResponse[List[WishEntry]] =
     EitherT(
-      sql"SELECT email, heading, description, imageURL, id FROM wishes WHERE email=$email"
+      sql"SELECT email, heading, description, imageURL, id, index FROM wishes WHERE email=$email"
         .query[WishEntry]
         .list
         .attemptSql
         .map(_.left.map(_.getMessage))
         .transact(xa))
 
-  private def entryToTuple(w: WishEntry): (String, String, String, String) =
-    (w.email, w.heading, w.desc, w.image)
+  private def entryToTuple(w: WishEntry): (String, String, String, String, Int) =
+    (w.email, w.heading, w.desc, w.image, w.index)
 
   private def setEntriesFor(email: String,
                             entries: List[WishEntry]): Free[ConnectionOp, Either[String, String]] =
     for {
       deleteCount <- sql"DELETE FROM wishes WHERE email=$email".update.run
-      insertCount <- Update[(String, String, String, String)](
-        "INSERT INTO wishes (email, heading, description, imageURL) VALUES (?, ?, ?, ?)")
+      insertCount <- Update[(String, String, String, String, Int)](
+        "INSERT INTO wishes (email, heading, description, imageURL, index) VALUES (?, ?, ?, ?, ?)")
         .updateMany(entries.map(entryToTuple))
     } yield
       if (insertCount == entries.length) Right(s"Successfully updated $insertCount wishes")
@@ -161,12 +181,19 @@ case class PostgreSQLPersistence(dbconf: DBConfig) extends Persistence[String, S
   override def createUser(createUserRequest: CreateUserRequest,
                           activationToken: String): PersistenceResponse[String] = {
     val up = Update[DBUser](
-      "insert into users (firstName, lastName, email, hashedPassword, registrationToken, " +
-        "finalized) values (?, ?, ?, ?, ?, ?)")
-    val c                              = createUserRequest
-    val dbu                            = DBUser(c.firstName, c.lastName, c.email, c.password.bcrypt, activationToken, false)
+      "insert into users (firstName, lastName, email, hashedPassword, secretURL, registrationToken, " +
+        "finalized) values (?, ?, ?, ?, ?, ?, ?)")
+    val c = createUserRequest
+    val dbu = DBUser(c.firstName,
+                     c.lastName,
+                     c.email,
+                     c.password.bcrypt,
+                     java.util.UUID.randomUUID.toString,
+                     activationToken,
+                     false)
+    println(s"Creating user: $dbu")
     val insertQuery: ConnectionIO[Int] = up.run(dbu)
-    val result                   = insertQuery.transact(xa)
+    val result                         = insertQuery.transact(xa)
     EitherT(result.map {
       case 1 => Right("Successfully created user")
       case _ => Left("Failed creating user in db")
