@@ -55,7 +55,7 @@ case class WishRAuthentication(persistence: Persistence[String, String]) extends
       }
 
   val onAuthFailure: AuthedService[String] = Kleisli(req => {
-    Forbidden(req.authInfo)
+    Forbidden(req.authInfo).removeCookie("authcookie")
   })
 
   def authWithFailure[Err, T](

@@ -18,11 +18,16 @@ import chandu0101.scalajs.react.components.materialui._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.prefix_<^._
 import chandu0101.scalajs.react.components.Implicits._
+import com.sun.org.apache.xpath.internal.operations.Bool
 import japgolly.scalajs.react.vdom.Frag
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.scalajs.js
+import scala.scalajs.js.UndefOr
 import scala.util.{Failure, Success}
+import scalaz.Alpha.P
+
+import org.scalajs.dom.document
 
 object WishRAppContainer {
 
@@ -32,10 +37,14 @@ object WishRAppContainer {
   case object WishList   extends Page
   case object CreateUser extends Page
 
-  def apply() =
-    ReactComponentB[Unit]("WishRAppContainer")
-      .initialState(WishRAppContainer.State())
+  def apply(version: String, cookieSecret: Option[String], cookieUser: Option[String]) =
+    ReactComponentB[Props]("WishRAppContainer")
+      .initialState(
+        WishRAppContainer.State(authorizationSecret = cookieSecret, userName = cookieUser))
       .renderBackend[WishRAppContainer.Backend]
+      .propsDefault(Props(version))
+
+  case class Props(version: String)
 
   case class Action(title: String, onClick: Callback)
 
@@ -50,7 +59,8 @@ object WishRAppContainer {
                    dialogText: String = "",
                    dialogOpen: Boolean = false,
                    dialogActions: List[Action] = Nil,
-                   editingWishes: List[Wish] = Nil)
+                   editingWishes: List[Wish] = Nil,
+                   drawerOpen: Boolean = false)
 
   class Backend($ : BackendScope[_, State]) {
 
@@ -67,7 +77,7 @@ object WishRAppContainer {
       }
     }
 
-    def render(S: State) = {
+    def render(P: Props, S: State) = {
 
       def showSnackBar: (String) => Unit =
         (withText: String) =>
@@ -140,8 +150,10 @@ object WishRAppContainer {
               $.modState(_.copy(wishes = wishes, currentPage = WishList)).runNow()
             case Failure(AjaxException(xhr)) =>
               println(s"Exception: ${xhr.responseText}")
+              $.modState(_.copy(authorizationSecret = None, currentPage = Login))
             case Failure(err) =>
               println(err.getMessage)
+              $.modState(_.copy(authorizationSecret = None, currentPage = Login))
           }
 
       def updateWishes(f: List[Wish] => List[Wish]): Unit =
@@ -156,8 +168,9 @@ object WishRAppContainer {
 
       val page: ReactElement = S.currentPage match {
         case CreateUser => CreateUserPage(showDialog).build()
-        case Login      => LoginPage(handleLogin, $.modState(_.copy(currentPage = CreateUser))).build()
-        case Fetching =>
+        case Login if !(S.userName.isDefined && S.authorizationSecret.isDefined) =>
+          LoginPage(handleLogin, $.modState(_.copy(currentPage = CreateUser))).build()
+        case Fetching | Login if S.userName.isDefined && S.authorizationSecret.isDefined =>
           fetchWishes()
           <.div("Downloading wishes...")
         case WishList =>
@@ -183,8 +196,9 @@ object WishRAppContainer {
 
       val muiAppBar = MuiAppBar(
         title = "WishR",
-        showMenuIconButton = false
-      )()
+        showMenuIconButton = true,
+        onLeftIconButtonTouchTap = (r: ReactEventH) => $.modState(_.copy(drawerOpen = true))
+      )(<.p())
 
       val dialogButtons: List[ReactComponentU_] = S.dialogActions.map {
         case Action(title, callback) =>
@@ -195,6 +209,27 @@ object WishRAppContainer {
       } :+ MuiFlatButton(label = "Dismiss",
                          onClick = (r: ReactEventH) => $.modState(_.copy(dialogOpen = false)))()
 
+      val title = <.div(^.key := "title", <.h1("WishR"))
+      val version = MuiMenuItem(
+        key = "versionitem",
+        primaryText = s"Version ${P.version}"
+      )()
+      val logout = MuiMenuItem(
+        key = "logout",
+        primaryText = "Logout",
+        onTouchTap = (r: ReactEventH) =>
+          $.modState(_.copy(authorizationSecret = None, userName = None, currentPage = Login))
+      )()
+
+      def toggleDrawerOpen =
+        (b: Boolean, s: String) =>
+          Callback.info(s"toggle drawer $b $s") >> $.modState(s =>
+            s.copy(drawerOpen = !s.drawerOpen))
+
+      val drawer = MuiDrawer(open = S.drawerOpen,
+                             docked = false,
+                             onRequestChange = toggleDrawerOpen)(title, version, logout)
+
       val dialog = MuiDialog(
         title = S.dialogText,
         open = S.dialogOpen,
@@ -202,7 +237,7 @@ object WishRAppContainer {
         onRequestClose = (b: Boolean) => $.modState(_.copy(dialogOpen = false))
       )()
 
-      MuiMuiThemeProvider(muiTheme = S.theme)(<.div(muiAppBar, page, snackBar, dialog))
+      MuiMuiThemeProvider(muiTheme = S.theme)(<.div(muiAppBar, page, snackBar, dialog, drawer))
     }
 
   }

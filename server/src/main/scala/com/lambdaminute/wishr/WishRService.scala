@@ -31,6 +31,8 @@ case class WishRService(persistence: Persistence[String, String],
       .map(Task.now)
       .getOrElse(NotFound())
 
+  
+
   def service: Service[Request, MaybeResponse] =
     unauthedService orElse authentication.middleware(authedService)
 
@@ -83,6 +85,8 @@ case class WishRService(persistence: Persistence[String, String],
     case request @ (POST -> Root / "login" as user) =>
       println("LOGIN REQUEST" + request)
       Ok(user.secret)
+        .addCookie(Cookie("authcookie", user.secret))
+        .addCookie(Cookie("authname", user.name))
 
     case GET -> Root / "entries" as user =>
       getEntriesFor(user.name)

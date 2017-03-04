@@ -36,7 +36,7 @@ object LoginPage {
       e => {
         e.persist()
         $.modState(_.copy(password = e.target.value))
-      } >> Callback.info(s"new password: ${e.target.value}")
+      }
 
     def render(S: State, P: Props) = {
 
@@ -64,9 +64,13 @@ object LoginPage {
       val userNameField: ReactComponentU_ =
         MuiTextField(floatingLabelText = "e-mail", onChange = handleNameChange)()
       val passwordField: ReactComponentU_ =
-        MuiTextField(floatingLabelText = "password",
-                     `type` = "password",
-                     onChange = handlePasswordChange)()
+        MuiTextField(
+          floatingLabelText = "password",
+          `type` = "password",
+          onChange = handlePasswordChange,
+          onKeyDown =
+            (r: ReactKeyboardEventH) => if (r.key == "Enter") sendLogin else Callback.empty
+        )()
       val loginButton =
         MuiFlatButton(label = "login", primary = true, onClick = handleLoginButton)()
 
