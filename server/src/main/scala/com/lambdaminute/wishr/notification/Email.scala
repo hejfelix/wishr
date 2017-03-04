@@ -12,7 +12,7 @@ case class Email(emailSettings: EmailSettings, rootPath: String) {
     email.setSSLOnConnect(true)
     email.setFrom(emailSettings.sender)
     email.setSubject("Activation link")
-    email.setMsg(s"""Please go to http://$rootPath/finalize/$token to finalize your registration.""")
+    email.setMsg(s"""Please go to $rootPath/finalize/$token to finalize your registration.""")
     email.addTo(recipient)
     email.send()
   }
