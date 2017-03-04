@@ -31,7 +31,7 @@ case class WishRService(persistence: Persistence[String, String],
       .map(Task.now)
       .getOrElse(NotFound())
 
-  
+
 
   def service: Service[Request, MaybeResponse] =
     unauthedService orElse authentication.middleware(authedService)

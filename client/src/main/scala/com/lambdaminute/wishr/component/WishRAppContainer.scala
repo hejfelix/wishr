@@ -150,10 +150,18 @@ object WishRAppContainer {
               $.modState(_.copy(wishes = wishes, currentPage = WishList)).runNow()
             case Failure(AjaxException(xhr)) =>
               println(s"Exception: ${xhr.responseText}")
-              $.modState(_.copy(authorizationSecret = None, currentPage = Login))
+              $.modState(
+                _.copy(authorizationSecret = None,
+                       currentPage = Login,
+                       snackBarText = xhr.responseText,
+                       snackBarOpen = true)).runNow()
             case Failure(err) =>
               println(err.getMessage)
-              $.modState(_.copy(authorizationSecret = None, currentPage = Login))
+              $.modState(
+                _.copy(authorizationSecret = None,
+                       currentPage = Login,
+                       snackBarText = err.getMessage,
+                       snackBarOpen = true)).runNow()
           }
 
       def updateWishes(f: List[Wish] => List[Wish]): Unit =
