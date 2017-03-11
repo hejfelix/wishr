@@ -60,8 +60,8 @@ case class WishRService(persistence: Persistence[String, String],
       serveFile("./index.html" + request.pathInfo, request)
 
     case request
-        if request.method == GET && List(".css", ".html", ".js", ".ico").exists(
-          request.pathInfo.endsWith) =>
+        if request.method == GET && (List(".css", ".html", ".js", ".ico").exists(
+          request.pathInfo.endsWith) || request.pathInfo.contains("acme-challenge"))=>
       println(s"Got static file request: ${request.pathInfo}")
       serveFile("." + request.pathInfo, request)
 
@@ -82,7 +82,7 @@ case class WishRService(persistence: Persistence[String, String],
           Ok(s)
       }
 
-    case GET -> Root / finalize / token =>
+    case GET -> Root / "finalize" / token =>
       persistence.finalize(token).value.flatMap {
         case Left(err) => BadRequest(err)
         case Right(s)  => Ok(s)
