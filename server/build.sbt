@@ -26,7 +26,14 @@ libraryDependencies ++= Seq(
   "com.github.melrief" %% "pureconfig"          % "0.5.1"
 )
 
-//Doobie stuff
+// Slick stuff
+libraryDependencies ++= Seq(
+  "com.typesafe.slick" %% "slick"          % "3.2.0",
+  "org.slf4j"          % "slf4j-nop"       % "1.6.4",
+  "com.typesafe.slick" %% "slick-hikaricp" % "3.2.0"
+)
+
+// Doobie stuff
 libraryDependencies ++= Seq(
   "org.tpolecat" %% "doobie-core-cats",
   "org.tpolecat" %% "doobie-h2-cats",
@@ -34,7 +41,7 @@ libraryDependencies ++= Seq(
 ).map(_ % doobieVersion)
 
 //Java dependencies
-libraryDependencies += "com.h2database" % "h2" % "1.4.193"
+libraryDependencies += "com.h2database"     % "h2"            % "1.4.193"
 libraryDependencies += "org.apache.commons" % "commons-email" % "1.4"
 
 packAutoSettings

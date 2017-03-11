@@ -4,6 +4,6 @@ case class DBUser(firstName: String,
                   lastName: String,
                   email: String,
                   hashedPassword: String,
-  secretURL: String,
+                  secretURL: String,
                   registrationToken: String,
                   finalized: Boolean)

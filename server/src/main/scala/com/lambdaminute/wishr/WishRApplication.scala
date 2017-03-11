@@ -13,11 +13,12 @@ object WishRApplication extends ServerApp {
 
   //How to use this with ServerApp, since it expects Task[Server] and no Try[...]
   val configuration: ApplicationConf = loadConfig[ApplicationConf]("wishrSettings").get
-  val dbConf                         = DBConfig.fromStringUrl(configuration.dburl)
+//  val dbConf                         = DBConfig.fromStringUrl(configuration.dburl)
 
-  val persistenceModule = new PersistenceModule()
+  val persistenceModule                                   = new PersistenceModule()
+  private val dbConfig: PersistenceConfig[String, String] = WeakPersistenceConfig("", "")
   val persistence: ModuleOr[Persistence[String, String]] =
-    persistenceModule.fromConfig.run(PostGreSQLPersistenceConfig(dbConf))
+    persistenceModule.fromConfig.run(dbConfig)
 
   val serviceTask = persistence match {
     case Right(persistence) =>
