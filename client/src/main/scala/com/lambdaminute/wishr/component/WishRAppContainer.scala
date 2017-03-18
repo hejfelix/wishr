@@ -225,8 +225,12 @@ object WishRAppContainer {
       val logout = MuiMenuItem(
         key = "logout",
         primaryText = "Logout",
-        onTouchTap = (r: ReactEventH) =>
+        onTouchTap = (r: ReactEventH) => {
+          println("Resetting cookie...")
+          org.scalajs.dom.document.cookie = "authsecret=;Max-Age=0"
+          org.scalajs.dom.document.cookie = "authname=;Max-Age=0"
           $.modState(_.copy(authorizationSecret = None, userName = None, currentPage = Login))
+        }
       )()
 
       def showSharingLink =
