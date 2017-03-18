@@ -107,8 +107,7 @@ case class WishRService(persistence: Persistence[String, String],
     case request @ POST -> Root / "login" as user =>
       println("LOGIN REQUEST" + request)
       Ok(user.secret)
-        .addCookie(Cookie("authcookie", user.secret))
-        .addCookie(Cookie("authname", user.name))
+        .addCookie(Cookie("authcookie", s"${user.name};${user.secret}"))
 
     case GET -> Root / "entries" as user =>
       getEntriesFor(user.name)
