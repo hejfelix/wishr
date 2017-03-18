@@ -70,7 +70,7 @@ case class WeakPersistence() extends Persistence[String, String] {
   override def getEntriesFor(user: String): PersistenceResponse[List[WishEntry]] = ???
 //    Right(wishes.filter(_.email == user))
 
-  override def set(entries: List[WishEntry]): PersistenceResponse[String] = ???
+  override def set(entries: List[WishEntry], forEmail: String): PersistenceResponse[String] = ???
 //  {
 //    wishes = entries
 //    Right(wishes.mkString("\n"))

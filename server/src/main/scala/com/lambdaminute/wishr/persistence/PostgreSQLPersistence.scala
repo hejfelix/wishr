@@ -164,11 +164,8 @@ case class PostgreSQLPersistence(dbconf: DBConfig) extends Persistence[String, S
       if (insertCount == entries.length) Right(s"Successfully updated $insertCount wishes")
       else Left("Failed updating wishes")
 
-  override def set(entries: List[WishEntry]): PersistenceResponse[String] =
-    EitherT(entries match {
-      case Nil     => Task.now(Right("No wishes to add"))
-      case x :: xs => setEntriesFor(x.email, entries).transact(xa)
-    })
+  override def set(entries: List[WishEntry], forEmail: String): PersistenceResponse[String] =
+    EitherT( setEntriesFor(forEmail, entries).transact(xa) )
 
   override def finalize(registrationToken: String): PersistenceResponse[String] =
     EitherT(

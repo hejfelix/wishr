@@ -101,11 +101,11 @@ case class WishRService(persistence: Persistence[String, String],
         case Right(secret) =>
           val url = s"${configuration.rootPath}/?sharedURL=$secret"
           Ok(url)
-        case Left(err)     => NotFound(err)
+        case Left(err) => NotFound(err)
       }
 
     case request @ POST -> Root / "login" as user =>
-      println("LOGIN REQUEST" + request)
+      println("LOGIN REQUEST" + user)
       Ok(user.secret)
         .addCookie(Cookie("authcookie", s"${user.name};${user.secret}"))
 
@@ -146,7 +146,7 @@ case class WishRService(persistence: Persistence[String, String],
 
     println(s"Setting wishes for $user: ${wishes.mkString}")
 
-    persistence.set(entries).value.flatMap {
+    persistence.set(entries, user.name).value.flatMap {
       case Right(addResult) => Ok(addResult)
       case Left(err)        => InternalServerError(err)
     }

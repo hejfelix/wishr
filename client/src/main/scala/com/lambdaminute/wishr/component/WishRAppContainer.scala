@@ -108,8 +108,8 @@ object WishRAppContainer {
           .onComplete {
             case Success(msg) =>
               val snackText = s"Succesfully persisted state"
-              println(snackText)
-              showSnackBar(snackText)
+              println(msg.responseText)
+              showSnackBar(msg.responseText)
             case Failure(AjaxException(xhr)) =>
               val snackText = s"Error persisting state ${xhr.responseType}: ${xhr.responseText}"
               println(snackText)
