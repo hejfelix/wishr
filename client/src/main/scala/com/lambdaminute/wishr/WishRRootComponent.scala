@@ -33,12 +33,11 @@ object WishRRootComponent extends JSApp {
     val domRoot = document.getElementById("wishr-app")
     val kvps    = document.cookie.split(";")
     println(kvps.mkString)
-    val auth   = cookieValue("authcookie").map(_.split(";"))
-    val user   = auth.flatMap(_.headOption)
-    val secret = auth.flatMap(_.drop(1).headOption)
+    val auth   = cookieValue("authsecret")
+    val user   = cookieValue("authname")
     println(s"user: $user")
-    println(s"secret: $secret")
-    ReactDOM.render(WishRAppContainer(Conf.conf.get("version").mkString, secret, user).build(),
+    println(s"secret: $auth")
+    ReactDOM.render(WishRAppContainer(Conf.conf.get("version").mkString, auth, user).build(),
                     domRoot)
 
   }
