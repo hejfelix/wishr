@@ -141,6 +141,15 @@ case class PostgreSQLPersistence(dbconf: DBConfig) extends Persistence[String, S
         .transact(xa)
     )
 
+  override def userForSecretURL(secret: String): PersistenceResponse[String] =
+    EitherT(
+             sql"SELECT firstName FROM users WHERE secretURL=$secret"
+               .query[String]
+               .option
+               .map(_.toRight("User not found"))
+               .transact(xa)
+           )
+
   override def getEntriesFor(email: String): PersistenceResponse[List[WishEntry]] =
     EitherT(
       sql"SELECT email, heading, description, imageURL, id, index FROM wishes WHERE email=$email"

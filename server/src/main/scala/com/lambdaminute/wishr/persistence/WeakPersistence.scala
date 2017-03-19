@@ -102,4 +102,6 @@ case class WeakPersistence() extends Persistence[String, String] {
   override def emailForSecretURL(secretURL: String): PersistenceResponse[String] = ???
 
   override def getSharingURL(email: String): PersistenceResponse[String] = ???
+
+  override def userForSecretURL(secret: String): PersistenceResponse[String] = ???
 }

@@ -51,17 +51,28 @@ case class WishRService(persistence: Persistence[String, String],
         case Left(error)   => Ok(error)
       }
     case request @ GET -> Root if request.params.contains("sharedURL") =>
-      val secretURL = request.params.get("sharedURL").get
+      val secretURL                                      = request.params.get("sharedURL").get
+      val owner: persistence.PersistenceResponse[String] = persistence.userForSecretURL(secretURL)
+
       println(s"Fetching wishes for secret $secretURL")
-      serveFile("index-shared.html", request)
-        .map(_.addCookie(Cookie("secretURL", secretURL)))
+
+      owner.value.flatMap {
+        case Right(owner) =>
+          serveFile("index-shared.html", request)
+            .map(
+              _.addCookie(Cookie("secretURL", secretURL))
+                .addCookie(Cookie("secretURLOwner", owner))
+            )
+        case Left(err) => NotFound(err)
+      }
+
     case request @ (GET -> Root) =>
       println(s"Got request for root")
       serveFile("./index.html" + request.pathInfo, request)
 
     case request
         if request.method == GET && (List(".css", ".html", ".js", ".ico", ".svg").exists(
-          request.pathInfo.endsWith) || request.pathInfo.contains("acme-challenge"))=>
+          request.pathInfo.endsWith) || request.pathInfo.contains("acme-challenge")) =>
       println(s"Got static file request: ${request.pathInfo}")
       serveFile("." + request.pathInfo, request)
 

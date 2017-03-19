@@ -20,6 +20,8 @@ trait Persistence[Error, Secret] {
 
   def getEntriesFor(user: String): PersistenceResponse[List[WishEntry]]
 
+  def userForSecretURL(secret: String): PersistenceResponse[String]
+
   def set(entries: List[WishEntry], forEmail: String): PersistenceResponse[String]
 
   def finalize(registrationToken: String): PersistenceResponse[String]

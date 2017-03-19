@@ -8,18 +8,20 @@ import japgolly.scalajs.react.{BackendScope, Callback, ReactComponentB}
 import japgolly.scalajs.react.vdom.prefix_<^._
 object SharedPage {
 
-  case class Props(wishes: List[Wish])
+  case class Props(wishes: List[Wish], owner: String)
 
-  def apply(wishes: List[Wish]) =
+  def apply(wishes: List[Wish], owner: String) =
     ReactComponentB[Props]("LoginPage")
       .renderBackend[SharedPage.Backend]
-      .propsDefault(Props(wishes))
+      .propsDefault(Props(wishes, owner))
 
   class Backend($ : BackendScope[Props, _]) {
     def render(P: Props) = {
       val wishCards = P.wishes.map(w => WishCard.fromWishReadOnly(w))
       MuiMuiThemeProvider(muiTheme = Mui.Styles.getMuiTheme(Mui.Styles.LightRawTheme))(
-        <.div(^.cls := "CardsList", wishCards)
+        <.div(^.cls := "CardsList",
+              <.h2(^.cls := "edit-page-title", s"${P.owner} has shared this wish list with you"),
+              wishCards)
       )
     }
   }

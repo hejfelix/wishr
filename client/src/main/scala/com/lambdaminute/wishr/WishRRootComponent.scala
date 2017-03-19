@@ -19,22 +19,24 @@ object Conf extends js.Object {
   val conf: js.Dictionary[String] = scalajs.js.native
 }
 
-object WishRRootComponent extends JSApp {
-
+trait CookieValue {
   def cookieValue(key: String): Option[String] =
     document.cookie
       .split(";")
       .map(_.trim)
       .find(_.startsWith(key))
       .flatMap(_.split("=").drop(1).headOption)
+}
+
+object WishRRootComponent extends JSApp with CookieValue {
 
   def main(): Unit = {
 
     val domRoot = document.getElementById("wishr-app")
     val kvps    = document.cookie.split(";")
     println(kvps.mkString)
-    val auth   = cookieValue("authsecret")
-    val user   = cookieValue("authname")
+    val auth = cookieValue("authsecret")
+    val user = cookieValue("authname")
     println(s"user: $user")
     println(s"secret: $auth")
     ReactDOM.render(WishRAppContainer(Conf.conf.get("version").mkString, auth, user).build(),
@@ -44,14 +46,15 @@ object WishRRootComponent extends JSApp {
 
 }
 
-object SharedList extends JSApp {
+object SharedList extends JSApp with CookieValue {
 
   def main(): Unit = {
 
-    val domRoot = document.getElementById("wishr-app")
-    val kvps    = document.cookie.split(";")
-    val secretURL =
-      kvps.map(_.trim).find(_.startsWith("secretURL")).flatMap(_.split("=").drop(1).headOption)
+    val domRoot        = document.getElementById("wishr-app")
+    val kvps           = document.cookie.split(";")
+    val secretURL      = cookieValue("secretURL")
+    val secretURLOwner = cookieValue("secretURLOwner")
+    println(document.cookie)
     println(kvps.mkString("\n"))
     println(s"fetching secret url: $secretURL")
     Ajax
@@ -61,7 +64,7 @@ object SharedList extends JSApp {
         case Success(msg) =>
           println(msg.responseText)
           val wishes = read[List[Wish]](msg.responseText)
-          ReactDOM.render(SharedPage(wishes).build(), domRoot)
+          ReactDOM.render(SharedPage(wishes, secretURLOwner.mkString).build(), domRoot)
       }
 
   }
