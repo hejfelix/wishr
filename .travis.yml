@@ -20,6 +20,7 @@ script:
   - sudo mkdir -p ./server/target/pack/client/target/scala-2.11/
   - sudo cp ./client/target/scala-2.11/client-fastopt.js ./server/target/pack/client/target/scala-2.11/client-fastopt.js
   - sudo cp -r ./assets ./server/target/pack/
+  - sudo cp -r ./graphics ./server/target/pack/
   - docker build -t hejfelix/wishr .
   - docker push hejfelix/wishr
   - docker login --username=$HEROKU_EMAIL --password=$HEROKU_API_KEY registry.heroku.com
