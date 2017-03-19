@@ -17,6 +17,7 @@ import org.http4s.dsl._
 import org.http4s.server.syntax._
 import cats.implicits._
 import fs2.interop.cats._
+import org.http4s.twirl._
 
 case class WishRService(persistence: Persistence[String, String],
                         authentication: WishRAuthentication,
@@ -58,17 +59,13 @@ case class WishRService(persistence: Persistence[String, String],
 
       owner.value.flatMap {
         case Right(owner) =>
-          serveFile("index-shared.html", request)
-            .map(
-              _.addCookie(Cookie("secretURL", secretURL, maxAge = Option(10)))
-                .addCookie(Cookie("secretURLOwner", owner, maxAge = Option(10)))
-            )
+          Ok(html.share(secretURL, owner))
         case Left(err) => NotFound(err)
       }
 
     case request @ (GET -> Root) =>
       println(s"Got request for root")
-      serveFile("./index.html" + request.pathInfo, request)
+      Ok(html.index())
 
     case request
         if request.method == GET && (List(".css", ".html", ".js", ".ico", ".svg").exists(

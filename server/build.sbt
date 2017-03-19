@@ -6,8 +6,13 @@ val circeVersion = "0.7.0"
 
 val doobieVersion = "0.4.1"
 
-resolvers +=
-  "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+resolvers ++= Seq(
+  "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
+  "spray repo" at "http://repo.spray.io"
+)
+
+enablePlugins(SbtTwirl)
+
 
 libraryDependencies ++= Seq(
   "io.circe" %% "circe-core",
@@ -22,6 +27,7 @@ libraryDependencies ++= Seq(
   "org.http4s"         %% "http4s-dsl"          % http4sVersion,
   "org.http4s"         %% "http4s-argonaut"     % http4sVersion,
   "org.http4s"         %% "http4s-circe"        % http4sVersion,
+  "org.http4s"         %% "http4s-twirl"        % http4sVersion,
   "org.slf4j"          % "slf4j-simple"         % "1.6.4",
   "com.github.melrief" %% "pureconfig"          % "0.5.1"
 )
@@ -34,7 +40,7 @@ libraryDependencies ++= Seq(
 ).map(_ % doobieVersion)
 
 //Java dependencies
-libraryDependencies += "com.h2database" % "h2" % "1.4.193"
+libraryDependencies += "com.h2database"     % "h2"            % "1.4.193"
 libraryDependencies += "org.apache.commons" % "commons-email" % "1.4"
 
 packAutoSettings

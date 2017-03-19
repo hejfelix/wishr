@@ -52,11 +52,9 @@ object SharedList extends JSApp with CookieValue {
 
     val domRoot        = document.getElementById("wishr-app")
     val kvps           = document.cookie.split(";")
-    val secretURL      = cookieValue("secretURL")
-    val secretURLOwner = cookieValue("secretURLOwner")
-    println(document.cookie)
-    println(kvps.mkString("\n"))
-    println(s"fetching secret url: $secretURL")
+    val secretURL      = Conf.conf("secretURL")
+    val secretURLOwner = Conf.conf("secretURLOwner")
+
     Ajax
       .get(s"/shared-wishes/${secretURL.mkString}",
            headers = Map("Content-Type" -> "application/json"))

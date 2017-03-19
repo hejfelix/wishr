@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="styles.css">
+        <meta charset="UTF-8">
+        <title>WishR</title>
+    </head>
+
+    <body>
+        <script type="text/javascript" src="assets/index-bundle.js"></script>
+        <script type="text/javascript" src="assets/material_ui-bundle.js"></script>
+
+            <!-- Include Scala.js compiled code -->
+        <script type="text/javascript" src="client/target/scala-2.11/client-fastopt.js"></script>
+            <!-- Run com.lambdaminute.wishr.TutorialApp -->
+
+
+        <div id="wishr-app"></div>
+        <script type="text/javascript">
+
+    conf = {
+        "version": "0.0.0"
+    }
+    com.lambdaminute.wishr.WishRRootComponent().main();
+</script>
+
+
+    </body>
+</html>
