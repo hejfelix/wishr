@@ -19,7 +19,7 @@ object SharedPage {
     def render(P: Props) = {
       val wishCards = P.wishes.map(w => WishCard.fromWishReadOnly(w))
       MuiMuiThemeProvider(muiTheme = Mui.Styles.getMuiTheme(Mui.Styles.LightRawTheme))(
-        <.div(wishCards)
+        <.div(^.cls := "CardsList", wishCards)
       )
     }
   }

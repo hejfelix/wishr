@@ -10,7 +10,7 @@ import org.scalajs.dom.html.Image
 
 import scala.scalajs
 import scala.scalajs.js
-import scala.scalajs.js.Any
+import scala.scalajs.js.{Any, URIUtils}
 import scalaz.Alpha.S
 import chandu0101.scalajs.react.components.Implicits._
 import japgolly.scalajs.react.Addons.ReactCssTransitionGroup
@@ -131,6 +131,44 @@ object WishCard {
         )
       )
 
+      val priceRunnerURLEncoded =
+        URIUtils.encodeURI(s"http://www.pricerunner.dk/search?q=${S.wish.heading}")
+      val amazonURLEncoded =
+        URIUtils.encodeURI(s"https://www.amazon.co.uk/s/?field-keywords=${S.wish.heading}")
+
+      println(priceRunnerURLEncoded)
+
+      val amazonSearchButton =
+        MuiFlatButton(
+          onClick = (_: ReactEventH) =>
+            Callback(
+              org.scalajs.dom.window.open(url = amazonURLEncoded, target = "_blank")
+          ))(
+          <.img(
+            ^.src := "./graphics/amazon.svg",
+            ^.height := "32px",
+            ^.width := "32px"
+          )
+        )
+      val priceRunnerSearchButton =
+        MuiFlatButton(
+          onClick = (_: ReactEventH) =>
+            Callback(
+              org.scalajs.dom.window.open(url = priceRunnerURLEncoded, target = "_blank")
+          ))(
+          <.img(
+            ^.src := "./graphics/pricerunner.svg",
+            ^.height := "32px",
+            ^.width := "32px"
+          )
+        )
+
+      val searchButtons = <.div(
+        ^.cls := "WishCard-Search",
+        amazonSearchButton,
+        priceRunnerSearchButton
+      )
+
       val wishCardActions = <.div(
         ^.cls := "WishCard-Actions",
         <.hr(),
@@ -141,7 +179,8 @@ object WishCard {
         MuiFlatButton(key = "delete",
                       label = "Delete",
                       secondary = true,
-                      onClick = props.openDeleteDialog)()
+                      onClick = props.openDeleteDialog)(),
+        searchButtons
       )
 
       val editCardActions = <.div(
@@ -162,14 +201,26 @@ object WishCard {
 
       println(s"Adding wish number ${props.index} with text ${S.wish.heading}")
 
+      val readOnlyAction = <.div(
+        ^.cls := "WishCard-Actions",
+        <.hr(),
+        <.div(^.cls := "WishCard-Actions",
+              MuiFlatButton(key = "", label = "", primary = true)(),
+              searchButtons)
+      )
+
+      val readOnlyContent = <.div(^.cls := "WishCard", wishCardContent, readOnlyAction)
+
+      val editableContent = <.div(
+        ^.cls := "WishCard",
+        if (props.editing) editingContent else wishCardContent,
+        if (props.editing) editCardActions else wishCardActions
+      )
+
       val content =
-        if (props.readOnly) <.div(^.cls := "WishCard", wishCardContent)
-        else
-          <.div(
-            ^.cls := "WishCard",
-            if (props.editing) editingContent else wishCardContent,
-            if (props.editing) editCardActions else wishCardActions
-          )
+        if (props.readOnly) readOnlyContent
+        else editableContent
+
       MuiPaper(zDepth = ZDepth._4, key = props.index.toString, transitionEnabled = true)(
         content
       )
