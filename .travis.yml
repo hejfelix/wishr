@@ -9,14 +9,14 @@ before_install:
   - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
   - docker pull 1science/sbt:0.13.8-oracle-jre-8
   - docker pull schodemeiss/npm-tools
-  - docker run -ti --rm -v "$PWD:/app" -v "$HOME/.ivy2":/root/.ivy2 1science/sbt:0.13.8-oracle-jre-8 \sbt -v clean compile client/fastOptJS server/pack
+  - travis_retry docker run -ti --rm -v "$PWD:/app" -v "$HOME/.ivy2":/root/.ivy2 1science/sbt:0.13.8-oracle-jre-8 \sbt -v clean compile client/fastOptJS server/pack
   - docker run --rm -it -v "$PWD":/app schodemeiss/npm-tools npm install
   - docker run --rm -it -v "$PWD":/app schodemeiss/npm-tools webpack
 
 script:
   - sudo ./travis_set_build_number.sh
-  - sudo cp *.html ./server/target/pack/
   - sudo cp styles.css ./server/target/pack/
+  - sudo cp favicon.ico ./server/target/pack/
   - sudo mkdir -p ./server/target/pack/client/target/scala-2.11/
   - sudo cp ./client/target/scala-2.11/client-fastopt.js ./server/target/pack/client/target/scala-2.11/client-fastopt.js
   - sudo cp -r ./assets ./server/target/pack/
