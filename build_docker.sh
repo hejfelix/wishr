@@ -6,7 +6,7 @@ docker pull schodemeiss/npm-tools
 
 #Build server / client
 docker run -ti --rm -v "$PWD:/app" -v "$HOME/.ivy2":/root/.ivy2 1science/sbt:0.13.8-oracle-jre-8 \
-\sbt clean compile client/fastOptJS server/pack
+\sbt -v clean compile client/fastOptJS server/pack
 
 #Fetch JS dependencies
 docker run --rm -it -v "$PWD":/app schodemeiss/npm-tools npm install

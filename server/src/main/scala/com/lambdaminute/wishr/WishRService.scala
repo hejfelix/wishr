@@ -60,8 +60,8 @@ case class WishRService(persistence: Persistence[String, String],
         case Right(owner) =>
           serveFile("index-shared.html", request)
             .map(
-              _.addCookie(Cookie("secretURL", secretURL))
-                .addCookie(Cookie("secretURLOwner", owner))
+              _.addCookie(Cookie("secretURL", secretURL, maxAge = Option(10)))
+                .addCookie(Cookie("secretURLOwner", owner, maxAge = Option(10)))
             )
         case Left(err) => NotFound(err)
       }
