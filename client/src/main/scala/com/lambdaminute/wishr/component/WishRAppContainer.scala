@@ -26,8 +26,10 @@ import scala.scalajs.js
 import scala.scalajs.js.UndefOr
 import scala.util.{Failure, Success}
 import scalaz.Alpha.P
-
 import org.scalajs.dom.document
+
+import scalacss.Attrs
+import scalacss.Attrs.color
 
 object WishRAppContainer {
 
@@ -36,6 +38,16 @@ object WishRAppContainer {
   case object Fetching   extends Page
   case object WishList   extends Page
   case object CreateUser extends Page
+
+  sealed trait Theme {
+    def name: String
+  }
+  case object Light extends Theme {
+    def name = "Light"
+  }
+  case object Dark extends Theme {
+    def name = "Dark"
+  }
 
   def apply(version: String, cookieSecret: Option[String], cookieUser: Option[String]) =
     ReactComponentB[Props]("WishRAppContainer")
@@ -51,7 +63,7 @@ object WishRAppContainer {
   case class State(currentPage: Page = Login,
                    userName: Option[String] = None,
                    authorizationSecret: Option[String] = None,
-                   theme: MuiTheme = Mui.Styles.getMuiTheme(Mui.Styles.LightRawTheme),
+                   theme: Theme = Light,
                    errorMessage: Option[String] = None,
                    wishes: List[Wish] = Nil,
                    snackBarText: String = "",
@@ -251,15 +263,30 @@ object WishRAppContainer {
         onTouchTap = (r: ReactEventH) => Callback(showSharingLink)
       )()
 
+      def toggleTheme(s: State) =
+        s.theme match {
+          case Light => s.copy(theme = Dark)
+          case Dark  => s.copy(theme = Light)
+        }
+
+      val toggleThemeMenuItem = MuiMenuItem(
+        key = "ToggleTheme",
+        primaryText = s"${S.theme.name} Theme",
+        onTouchTap = (r: ReactEventH) => $.modState(toggleTheme)
+      )()
+
       def toggleDrawerOpen =
         (b: Boolean, s: String) =>
           Callback.info(s"toggle drawer $b $s") >> $.modState(s =>
             s.copy(drawerOpen = !s.drawerOpen))
 
-      val drawer = MuiDrawer(
-        open = S.drawerOpen,
-        docked = false,
-        onRequestChange = toggleDrawerOpen)(title, version, logout, getLinkForSharing)
+      val drawer =
+        MuiDrawer(open = S.drawerOpen, docked = false, onRequestChange = toggleDrawerOpen)(
+          title,
+          version,
+          logout,
+          getLinkForSharing,
+          toggleThemeMenuItem)
 
       val dialog = MuiDialog(
         title = S.dialogText,
@@ -268,7 +295,21 @@ object WishRAppContainer {
         onRequestClose = (b: Boolean) => $.modState(_.copy(dialogOpen = false))
       )()
 
-      MuiMuiThemeProvider(muiTheme = S.theme)(<.div(muiAppBar, page, snackBar, dialog, drawer))
+      def withBaseColor(theme: MuiRawTheme)(baseColor: MuiColor) =
+        theme.copy(palette = theme.palette.copy(primary1Color = baseColor))
+
+      val theme = S.theme match {
+        case Light =>
+          document.body.style.backgroundColor = "#b7e9ff"
+          val theme = Mui.Styles.LightRawTheme
+          Mui.Styles.getMuiTheme(withBaseColor(theme)(Mui.Styles.colors.lightBlue200))
+        case Dark =>
+          document.body.style.backgroundColor = "#121212"
+          val darkRawTheme = Mui.Styles.DarkRawTheme
+          Mui.Styles.getMuiTheme(withBaseColor(darkRawTheme)(Mui.Styles.colors.cyan700))
+      }
+
+      MuiMuiThemeProvider(muiTheme = theme)(<.div(muiAppBar, page, snackBar, dialog, drawer))
     }
 
   }

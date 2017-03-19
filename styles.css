@@ -1,6 +1,8 @@
-html, body{
+html, body {
     background-color: #b7e9ff;
+    margin: 0;
     height: 100%;
+    overflow: auto;
 }
 
 .UserCard p {
@@ -9,13 +11,13 @@ html, body{
 }
 
 .CardsList > div {
-  margin-top: 20px;
+    margin: 20px 20px 0px 20px;
 }
 
 hr {
-  border: none;
-  height: 1px;
-  background-color: #dadada;
+    border: none;
+    height: 1px;
+    background-color: #dadada;
 }
 
 .WishCard-Search {
@@ -23,11 +25,13 @@ hr {
 }
 
 .WishCard {
-  padding: 20px;
+    margin: 20px 20px;
+    padding: 20px;
+    clear: both;
 }
 
 .Card {
-  padding: 20px;
+    padding: 20px;
 }
 
 .WishCard h3 {
@@ -35,29 +39,24 @@ hr {
 }
 
 .clearfix:after {
-  content: ".";
-  display: block;
-  height: 0;
-  clear: both;
-  visibility: hidden;
+    content: ".";
+    display: block;
+    height: 0;
+    clear: both;
+    visibility: hidden;
 }
 
 .WishCard .WishCard-Content {
 }
 
 .WishCard .WishCard-Content-Image {
-      float: right;
-      max-width: 300px;
+    float: right;
+    max-width: 300px;
 }
 
 .WishCard .WishCard-Content-Image img {
-      width: 100%;
+    width: 100%;
 }
-
-.WishCard {
-  clear: both;
-}
-
 
 .example-enter {
     opacity: 0.01;
@@ -67,18 +66,20 @@ hr {
 .example-enter-active {
     opacity: 1;
 }
+
 .example-leave {
-  opacity: 1;
+    opacity: 1;
 }
 
 .example-leave.example-leave-active {
-  opacity: 0.01;
-  transition: opacity 3000ms ease-in;
+    opacity: 0.01;
+    transition: opacity 3000ms ease-in;
 }
 
 .add-wish {
-      float: right;
+    float: right;
 }
-.edit-page-title{
-      color: white;
+
+.edit-page-title {
+    color: white;
 }
