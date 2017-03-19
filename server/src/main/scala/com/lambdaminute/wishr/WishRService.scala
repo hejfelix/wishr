@@ -60,7 +60,7 @@ case class WishRService(persistence: Persistence[String, String],
       serveFile("./index.html" + request.pathInfo, request)
 
     case request
-        if request.method == GET && (List(".css", ".html", ".js", ".ico").exists(
+        if request.method == GET && (List(".css", ".html", ".js", ".ico", ".svg").exists(
           request.pathInfo.endsWith) || request.pathInfo.contains("acme-challenge"))=>
       println(s"Got static file request: ${request.pathInfo}")
       serveFile("." + request.pathInfo, request)

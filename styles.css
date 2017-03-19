@@ -18,6 +18,10 @@ hr {
   background-color: #dadada;
 }
 
+.WishCard-Search {
+    float: right;
+}
+
 .WishCard {
   padding: 20px;
 }

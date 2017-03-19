@@ -19,3 +19,4 @@ cp styles.css ./server/target/pack/
 mkdir -p ./server/target/pack/client/target/scala-2.11/
 cp ./client/target/scala-2.11/client-fastopt.js ./server/target/pack/client/target/scala-2.11/client-fastopt.js
 cp -r ./assets ./server/target/pack/
+cp -r ./graphics ./server/target/pack
