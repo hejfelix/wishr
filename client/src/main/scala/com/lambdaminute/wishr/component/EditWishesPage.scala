@@ -16,6 +16,7 @@ object EditWishesPage {
             startEditing: Wish => Unit,
             stopEditing: (Wish, Wish) => Unit,
             updateWishes: (List[Wish] => List[Wish]) => Unit,
+            grantWish: Wish => Unit,
             showDialog: (String, Option[Page], List[Action]) => Unit) =
     ReactComponentB[EditWishesPage.Props]("UserCard")
       .initialState(EditWishesPage
@@ -31,6 +32,7 @@ object EditWishesPage {
                  startEditing,
                  stopEditing,
                  updateWishes,
+                 grantWish,
                  showDialog))
 
   case class Props(owner: String,
@@ -41,6 +43,7 @@ object EditWishesPage {
                    startEditing: Wish => Unit,
                    stopEditing: (Wish, Wish) => Unit,
                    updateWishes: (List[Wish] => List[Wish]) => Unit,
+                   grantWish: Wish => Unit,
                    showDialog: (String, Option[Page], List[Action]) => Unit)
 
   case class State()
@@ -70,7 +73,8 @@ object EditWishesPage {
     def handleDelete(w: Wish): ReactEventH => Callback =
       e => Callback.info("Delete clicked")
 
-    val deleteDialogText = "Are you sure you want to delete this wish? Deleting cannot be undone"
+    val deleteDialogText =
+      "Are you sure you want to delete this wish? Accept by selecting a reason below"
 
     def dropFirstMatch[T](l: List[T], t: T) =
       l.takeWhile(_ != t) ++ l.dropWhile(_ != t).drop(1)
@@ -81,7 +85,10 @@ object EditWishesPage {
         P.wishes.zipWithIndex.map {
           case (w, i) =>
             val deleteAction =
-              Action("Delete", Callback(P.updateWishes(l => dropFirstMatch(l, w)))) :: Nil
+              Action(
+                "Wish granted",
+                Callback(P.grantWish(w)) >> Callback(P.updateWishes(l => dropFirstMatch(l, w)))) ::
+                Action("No longer a wish", Callback(P.updateWishes(l => dropFirstMatch(l, w)))) :: Nil
             val deleteCallback =
               Callback(P.showDialog(deleteDialogText, None, deleteAction))
             WishCard.fromWish(

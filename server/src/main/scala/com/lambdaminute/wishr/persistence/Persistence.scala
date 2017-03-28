@@ -28,4 +28,6 @@ trait Persistence[Error, Secret] {
 
   def createUser(createUserRequest: CreateUserRequest,
                  activationToken: String): PersistenceResponse[String]
+
+  def grant(entry: WishEntry): PersistenceResponse[String]
 }

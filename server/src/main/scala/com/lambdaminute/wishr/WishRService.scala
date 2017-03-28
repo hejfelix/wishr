@@ -125,6 +125,21 @@ case class WishRService(persistence: Persistence[String, String],
       val wishes: Task[List[Wish]] = request.req.as(jsonOf[List[Wish]])
 
       wishes.flatMap(w => setWishesFor(w, user))
+
+    case request @ POST -> Root / "grant" as user =>
+      val wish: Task[Wish] = request.req.as(jsonOf[Wish])
+      println(s"Granting wish ${wish} for user ${user}")
+
+      wish
+        .map {
+          case Wish(heading, desc, image) =>
+            WishEntry(user.name, heading, desc, image.mkString, 0, -1)
+        }
+        .flatMap(w => persistence.grant(w).value)
+        .flatMap {
+          case Right(addResult) => println("WISH GRANTED"); Ok(addResult)
+          case Left(err)        => println(s"WISH NOT GRANTED $err"); InternalServerError(err)
+        }
   }
 
   private def getEntriesFor(username: String) = {

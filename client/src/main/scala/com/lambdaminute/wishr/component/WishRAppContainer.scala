@@ -186,6 +186,21 @@ object WishRAppContainer {
           }
         }).runNow()
 
+      def grantWish(w: Wish) =
+        Ajax
+          .post("/grant",
+                write[Wish](w),
+                headers = Map("Content-Type"  -> "application/json",
+                              "Authorization" -> S.authorizationSecret.mkString))
+          .onComplete {
+            case Success(msg) =>
+              println(msg.responseText)
+              showDialog(msg.responseText)
+            case Failure(err) =>
+              println(err.getMessage)
+              showSnackBar(err.getMessage)
+          }
+
       val page: ReactElement = S.currentPage match {
         case CreateUser => CreateUserPage(showDialog).build()
         case Login if !(S.userName.isDefined && S.authorizationSecret.isDefined) =>
@@ -203,6 +218,7 @@ object WishRAppContainer {
             startEditing,
             stopEditing,
             updateWishes _,
+            grantWish,
             showDialog
           ).build()
       }
