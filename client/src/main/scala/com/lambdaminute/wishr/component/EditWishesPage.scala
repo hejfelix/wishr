@@ -2,7 +2,7 @@ package com.lambdaminute.wishr.component
 
 import chandu0101.scalajs.react.components.materialui.Mui.SvgIcons.ImageControlPoint
 import chandu0101.scalajs.react.components.materialui._
-import com.lambdaminute.wishr.component.WishRAppContainer.{Action, Page}
+import com.lambdaminute.wishr.component.WishRAppContainer.{Action, Page, Primary, Secondary}
 import com.lambdaminute.wishr.model.Wish
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, Callback, ReactComponentB, ReactNode, _}
@@ -87,8 +87,12 @@ object EditWishesPage {
             val deleteAction =
               Action(
                 "Wish granted",
-                Callback(P.grantWish(w)) >> Callback(P.updateWishes(l => dropFirstMatch(l, w)))) ::
-                Action("No longer a wish", Callback(P.updateWishes(l => dropFirstMatch(l, w)))) :: Nil
+                Callback(P.grantWish(w)) >> Callback(P.updateWishes(l => dropFirstMatch(l, w))),
+                level = Primary) ::
+                Action("No longer a wish",
+                       Callback(P.updateWishes(l => dropFirstMatch(l, w))),
+                       level = Secondary) ::
+                Nil
             val deleteCallback =
               Callback(P.showDialog(deleteDialogText, None, deleteAction))
             WishCard.fromWish(

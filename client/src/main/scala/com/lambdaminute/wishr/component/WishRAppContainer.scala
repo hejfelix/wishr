@@ -1,35 +1,17 @@
 package com.lambdaminute.wishr.component
 
-import chandu0101.scalajs.react.components.materialui.{
-  Mui,
-  MuiFlatButton,
-  MuiMuiThemeProvider,
-  MuiPaper,
-  MuiTheme,
-  ZDepth
-}
-import com.lambdaminute.wishr.component.LoginPage.Props
+import chandu0101.scalajs.react.components.Implicits._
+import chandu0101.scalajs.react.components.materialui.{Mui, MuiFlatButton, MuiMuiThemeProvider, _}
 import com.lambdaminute.wishr.model.{User, Wish}
 import com.lambdaminute.wishr.serialization.OptionPickler.{read, write}
-import japgolly.scalajs.react.{BackendScope, Callback, ReactComponentB}
-import japgolly.scalajs.react.vdom.prefix_<^.{<, ^}
+import japgolly.scalajs.react.vdom.prefix_<^.{<, ^, _}
+import japgolly.scalajs.react.{BackendScope, Callback, ReactComponentB, _}
+import org.scalajs.dom.document
 import org.scalajs.dom.ext.{Ajax, AjaxException}
-import chandu0101.scalajs.react.components.materialui._
-import japgolly.scalajs.react._
-import japgolly.scalajs.react.vdom.prefix_<^._
-import chandu0101.scalajs.react.components.Implicits._
-import com.sun.org.apache.xpath.internal.operations.Bool
-import japgolly.scalajs.react.vdom.Frag
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.scalajs.js
-import scala.scalajs.js.UndefOr
 import scala.util.{Failure, Success}
-import scalaz.Alpha.P
-import org.scalajs.dom.document
-
-import scalacss.Attrs
-import scalacss.Attrs.color
 
 object WishRAppContainer {
 
@@ -58,7 +40,12 @@ object WishRAppContainer {
 
   case class Props(version: String)
 
-  case class Action(title: String, onClick: Callback)
+  case class Action(title: String, onClick: Callback, level: ActionLevel = Undefined)
+
+  sealed trait ActionLevel
+  case object Primary   extends ActionLevel
+  case object Secondary extends ActionLevel
+  case object Undefined extends ActionLevel
 
   case class State(currentPage: Page = Login,
                    userName: Option[String] = None,
@@ -237,11 +224,13 @@ object WishRAppContainer {
       )(<.p())
 
       val dialogButtons: List[ReactComponentU_] = S.dialogActions.map {
-        case Action(title, callback) =>
+        case Action(title, callback, level) =>
           MuiFlatButton(label = title,
                         onClick = (r: ReactEventH) =>
                           $.modState(_.copy(dialogOpen = false))
-                            >> callback)()
+                            >> callback,
+                        primary = level == Primary,
+                        secondary = level == Secondary)()
       } :+ MuiFlatButton(label = "Dismiss",
                          onClick = (r: ReactEventH) => $.modState(_.copy(dialogOpen = false)))()
 
