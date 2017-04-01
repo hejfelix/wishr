@@ -50,16 +50,19 @@ object EditWishesPage {
 
   class Backend($ : BackendScope[Props, State]) {
 
-    def addWish(w: Wish, inEditMode: Boolean = false)(wishes: List[Wish]): List[Wish] =
+    def addWish(w: Wish)(wishes: List[Wish]): List[Wish] =
       if (wishes.contains(w))
         wishes
       else
         w :: wishes
 
     def handleAddWish: ReactEventH => Callback =
-      e =>
-        Callback(
-          $.props.runNow().updateWishes(addWish(Wish("New Wish", "Description", None), true)))
+      e => {
+        val defaultWish = Wish("New Wish", "Description", None)
+        val props       = $.props.runNow()
+        Callback(props.updateWishes(addWish(defaultWish))) >> Callback(
+          props.startEditing(defaultWish))
+      }
 
     def handleDialogCancel: ReactEventH => Callback =
       e => Callback.info("Cancel Clicked")
