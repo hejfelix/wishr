@@ -33,7 +33,16 @@ case class WishRService(persistence: Persistence[String, String],
       .getOrElse(NotFound())
 
   def service: Service[Request, MaybeResponse] =
-    unauthedService orElse authentication.middleware(authedService)
+    denyNonSSLService orElse unauthedService orElse authentication.middleware(authedService)
+
+  val denyNonSSLService: HttpService = HttpService {
+    case request
+        if request.headers
+          .get(headers.`X-Forwarded-Proto`)
+          .map(_.value)
+          .getOrElse("") != "https" =>
+      Forbidden(s"For security reasons, please use https at ${configuration.rootPath}")
+  }
 
   val unauthedService: HttpService = HttpService {
 
