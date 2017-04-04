@@ -39,8 +39,7 @@ object WishRRootComponent extends JSApp with CookieValue {
     val user = cookieValue("authname")
     println(s"user: $user")
     println(s"secret: $auth")
-    ReactDOM.render(WishRAppContainer(Conf.conf.get("version").mkString, auth, user).build(),
-                    domRoot)
+    ReactDOM.render(WishRAppContainer(Conf.conf.get("version").mkString, auth, user), domRoot)
 
   }
 

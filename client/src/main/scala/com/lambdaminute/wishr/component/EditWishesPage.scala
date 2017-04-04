@@ -4,9 +4,17 @@ import chandu0101.scalajs.react.components.materialui.Mui.SvgIcons.ImageControlP
 import chandu0101.scalajs.react.components.materialui._
 import com.lambdaminute.wishr.component.WishRAppContainer.{Action, Page, Primary, Secondary}
 import com.lambdaminute.wishr.model.Wish
+import japgolly.scalajs.react.Addons.ReactCssTransitionGroup
 import japgolly.scalajs.react.vdom.prefix_<^._
 import japgolly.scalajs.react.{BackendScope, Callback, ReactComponentB, ReactNode, _}
+
 object EditWishesPage {
+
+  val component: ReactComponentC.ReqProps[Props, State, Backend, TopNode] =
+    ReactComponentB[Props]("UserCard")
+      .initialState(EditWishesPage.State())
+      .renderBackend[EditWishesPage.Backend]
+      .build
 
   def apply(user: String,
             wishes: List[Wish],
@@ -18,22 +26,19 @@ object EditWishesPage {
             updateWishes: (List[Wish] => List[Wish]) => Unit,
             grantWish: Wish => Unit,
             showDialog: (String, Option[Page], List[Action]) => Unit) =
-    ReactComponentB[EditWishesPage.Props]("UserCard")
-      .initialState(EditWishesPage
-        .State())
-      .renderBackend[EditWishesPage.Backend]
-      .propsDefault(
-        EditWishesPage
-          .Props(user,
-                 secret,
-                 wishes,
-                 showSnackBar,
-                 editingWishes,
-                 startEditing,
-                 stopEditing,
-                 updateWishes,
-                 grantWish,
-                 showDialog))
+    component(
+      EditWishesPage.Props(
+        user,
+        secret,
+        wishes,
+        showSnackBar,
+        editingWishes,
+        startEditing,
+        stopEditing,
+        updateWishes,
+        grantWish,
+        showDialog
+      ))
 
   case class Props(owner: String,
                    secret: String,
@@ -58,7 +63,7 @@ object EditWishesPage {
 
     def handleAddWish: ReactEventH => Callback =
       e => {
-        val defaultWish = Wish("New Wish", "Description", None)
+        val defaultWish = Wish("", "", None)
         val props       = $.props.runNow()
         Callback(props.updateWishes(addWish(defaultWish))) >> Callback(
           props.startEditing(defaultWish))
@@ -85,7 +90,7 @@ object EditWishesPage {
     def render(S: State, P: Props) = {
 
       lazy val cards =
-        P.wishes.zipWithIndex.map {
+        P.wishes.zip((0 to P.wishes.size - 1).reverse).map {
           case (w, i) =>
             val deleteAction =
               Action(
@@ -98,21 +103,25 @@ object EditWishesPage {
                 Nil
             val deleteCallback =
               Callback(P.showDialog(deleteDialogText, None, deleteAction))
-            WishCard.fromWish(
-              w,
-              deleteCallback >> Callback.info(s"Deleting wish: $w"),
-              i,
-              P.editingWishes.contains(w),
-              Callback(P.startEditing(w)) >> Callback.info(s"Started editing $w"),
-              newWish =>
-                Callback(P.stopEditing(w, newWish)) >> Callback.info(
-                  s"Changing wish to ${newWish}")
+
+            <.div(
+              ^.key := i,
+              WishCard.fromWish(
+                w,
+                deleteCallback >> Callback.info(s"Deleting wish: $w"),
+                i,
+                P.editingWishes.contains(w),
+                Callback(P.startEditing(w)) >> Callback.info(s"Started editing $w"),
+                newWish =>
+                  Callback(P.stopEditing(w, newWish)) >> Callback.info(
+                    s"Changing wish to ${newWish}")
+              )
             )
         }
 
       lazy val wishCards = <.div(
         ^.cls := "CardsList",
-        cards
+        ReactCssTransitionGroup("wish", component = "div")(cards)
       )
 
       lazy val actions: ReactNode = List(

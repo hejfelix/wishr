@@ -1,17 +1,21 @@
 package com.lambdaminute.wishr.component
 
+import cats.syntax.show
 import chandu0101.scalajs.react.components.Implicits._
 import chandu0101.scalajs.react.components.materialui.{Mui, MuiFlatButton, MuiMuiThemeProvider, _}
 import com.lambdaminute.wishr.model.{User, Wish}
 import com.lambdaminute.wishr.serialization.OptionPickler.{read, write}
+import japgolly.scalajs.react.Addons.ReactCssTransitionGroup
 import japgolly.scalajs.react.vdom.prefix_<^.{<, ^, _}
-import japgolly.scalajs.react.{BackendScope, Callback, ReactComponentB, _}
+import japgolly.scalajs.react.{BackendScope, Callback, ReactComponentB, TopNode, _}
 import org.scalajs.dom.document
 import org.scalajs.dom.ext.{Ajax, AjaxException}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.scalajs.js
 import scala.util.{Failure, Success}
+import scala.scalajs.js.timers._
+import scalacss.Attrs.color
 
 object WishRAppContainer {
 
@@ -31,14 +35,23 @@ object WishRAppContainer {
     def name = "Dark"
   }
 
-  def apply(version: String, cookieSecret: Option[String], cookieUser: Option[String]) =
+  val component: ReactComponentC.ReqProps[Props, State, Backend, TopNode] =
     ReactComponentB[Props]("WishRAppContainer")
-      .initialState(
-        WishRAppContainer.State(authorizationSecret = cookieSecret, userName = cookieUser))
-      .renderBackend[WishRAppContainer.Backend]
-      .propsDefault(Props(version))
+      .initialState(State())
+      .renderBackend[Backend]
+      .componentWillReceiveProps { receiveBlob =>
+        val p = receiveBlob.nextProps
+        val $ = receiveBlob.$
+        $.modState(_.copy(authorizationSecret = p.authorizationSecret, userName = p.userName))
+      }
+      .build
 
-  case class Props(version: String)
+  def apply(version: String, cookieSecret: Option[String], cookieUser: Option[String]) =
+    component(Props(version, authorizationSecret = cookieSecret, userName = cookieUser))
+
+  case class Props(version: String,
+                   authorizationSecret: Option[String] = None,
+                   userName: Option[String] = None)
 
   case class Action(title: String, onClick: Callback, level: ActionLevel = Undefined)
 
@@ -78,7 +91,7 @@ object WishRAppContainer {
 
     def render(P: Props, S: State) = {
 
-      def showSnackBar: (String) => Unit =
+      def showSnackSnackBarBar: (String) => Unit =
         (withText: String) =>
           $.modState(_.copy(snackBarText = withText, snackBarOpen = true)).runNow()
 
@@ -189,25 +202,31 @@ object WishRAppContainer {
           }
 
       val page: ReactElement = S.currentPage match {
-        case CreateUser => CreateUserPage(showDialog).build()
+        case CreateUser => CreateUserPage(showDialog)
         case Login if !(S.userName.isDefined && S.authorizationSecret.isDefined) =>
-          LoginPage(handleLogin, $.modState(_.copy(currentPage = CreateUser))).build()
+          LoginPage(handleLogin, $.modState(_.copy(currentPage = CreateUser)))
         case Fetching | Login if S.userName.isDefined && S.authorizationSecret.isDefined =>
           fetchWishes()
-          <.div("Downloading wishes...")
+          <.div(
+            ^.cls := "progress",
+            <.h2("Fetching wishes...")(^.cls := "edit-page-title"),
+            MuiCircularProgress(mode = DeterminateIndeterminate.indeterminate,
+                                size = 256.0,
+                                color = Mui.Styles.colors.teal200)()
+          )
         case WishList =>
           EditWishesPage(
             S.userName.mkString,
             S.wishes,
             S.authorizationSecret.mkString,
-            showSnackBar,
+            show,
             S.editingWishes,
             startEditing,
             stopEditing,
             updateWishes _,
             grantWish,
             showDialog
-          ).build()
+          )
       }
 
       val snackBar = MuiSnackbar(
@@ -314,7 +333,15 @@ object WishRAppContainer {
           Mui.Styles.getMuiTheme(withBaseColor(darkRawTheme)(Mui.Styles.colors.cyan700))
       }
 
-      MuiMuiThemeProvider(muiTheme = theme)(<.div(muiAppBar, page, snackBar, dialog, drawer))
+      println("SOMETHING OUTRAGEOUS")
+
+      MuiMuiThemeProvider(muiTheme = theme)(
+        <.div(muiAppBar,
+              ReactCssTransitionGroup("wish", component = "div")(
+                <.div(^.key := S.currentPage.toString, ^.cls := "page", page)),
+              snackBar,
+              dialog,
+              drawer))
     }
 
   }

@@ -38,6 +38,18 @@ hr {
     margin-top: 0;
 }
 
+.progress {
+    width: 100%;
+    text-align: center;
+}
+
+.page {
+    position: fixed;
+    top: 64;
+    zIndex: -1000;
+    width: 100%;
+}
+
 .clearfix:after {
     content: ".";
     display: block;
@@ -58,22 +70,23 @@ hr {
     width: 100%;
 }
 
-.example-enter {
-    opacity: 0.01;
-    transition: opacity left 500000ms linear;
+.wish-enter {
+    transform: translate(100%);
 }
 
-.example-enter-active {
-    opacity: 1;
+.wish-enter-active {
+    transform: translate(0%);
+    transition: transform 400ms ease-in-out;
+    /*transition-delay: 400ms;*/
 }
 
-.example-leave {
-    opacity: 1;
+.wish-leave {
+    transform: translate(0%);
 }
 
-.example-leave.example-leave-active {
-    opacity: 0.01;
-    transition: opacity 3000ms ease-in;
+.wish-leave.wish-leave-active {
+    transform: translate(-100%);
+    transition: transform 400ms ease-in-out;
 }
 
 .add-wish {

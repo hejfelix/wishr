@@ -14,11 +14,13 @@ import scalaz.Alpha.{P, S}
 
 object LoginPage {
 
+  val component = ReactComponentB[Props]("LoginPage")
+    .initialState(LoginPage.State("", ""))
+    .renderBackend[Backend]
+    .build
+
   def apply(onLogin: Either[String, User] => Unit, goToCreateUserPage: Callback) =
-    ReactComponentB[Props]("LoginPage")
-      .initialState(LoginPage.State("", ""))
-      .renderBackend[LoginPage.Backend]
-      .propsDefault(Props(onLogin, goToCreateUserPage))
+    component(Props(onLogin, goToCreateUserPage))
 
   case class Props(handleLogin: Either[String, User] => Unit, goToCreateUserPage: Callback)
 

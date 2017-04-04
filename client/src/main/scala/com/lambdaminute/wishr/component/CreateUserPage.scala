@@ -32,11 +32,13 @@ object CreateUserPage {
   }
   case class FormatError(reason: String) extends FormError
 
+  val component = ReactComponentB[Props]("CreateUserPage")
+    .initialState(CreateUserPage.State())
+    .renderBackend[CreateUserPage.Backend]
+    .build
+
   def apply(showDialog: (String, Option[Page], List[Action]) => Unit) =
-    ReactComponentB[Props]("CreateUserPage")
-      .initialState(State())
-      .renderBackend[CreateUserPage.Backend]
-      .propsDefault(Props(showDialog))
+    component(Props(showDialog))
 
   case class Props(showDialog: (String, Option[Page], List[Action]) => Unit)
 

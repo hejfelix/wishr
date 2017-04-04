@@ -199,7 +199,6 @@ object WishCard {
                       onClick = (rh: ReactEventH) => props.onFinishedUpdate(props.startingState))()
       )
 
-      println(s"Adding wish number ${props.index} with text ${S.wish.heading}")
 
       val readOnlyAction = <.div(
         ^.cls := "WishCard-Actions",
