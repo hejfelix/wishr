@@ -1,6 +1,6 @@
 package com.lambdaminute.wishr.component
 
-import chandu0101.scalajs.react.components.materialui.Mui.SvgIcons.ImageControlPoint
+import chandu0101.scalajs.react.components.materialui.Mui.SvgIcons.AvQueue
 import chandu0101.scalajs.react.components.materialui._
 import com.lambdaminute.wishr.component.WishRAppContainer.{Action, Page, Primary, Secondary}
 import com.lambdaminute.wishr.model.Wish
@@ -142,7 +142,7 @@ object EditWishesPage {
         MuiFloatingActionButton(key = "floating1",
                                 onMouseUp = handleAddWish,
                                 className = "add-wish")(
-          ImageControlPoint(
+          AvQueue(
             )())
 
       <.div(_react_fragReactNode(addWishButton), <.div(title, wishCards))

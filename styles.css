@@ -1,8 +1,9 @@
 html, body {
-    background-color: #b7e9ff;
-    margin: 0;
     height: 100%;
-    overflow: auto;
+}
+
+.body {
+    background-color: #b7e9ff;
 }
 
 .UserCard p {

@@ -355,7 +355,7 @@ object WishRAppContainer {
         case Dark =>
           document.body.style.backgroundColor = "#121212"
           val darkRawTheme = Mui.Styles.DarkRawTheme
-          Mui.Styles.getMuiTheme(withBaseColor(darkRawTheme)(Mui.Styles.colors.cyan700))
+          Mui.Styles.getMuiTheme(withBaseColor(darkRawTheme)(Mui.Styles.colors.grey500))
       }
 
       MuiMuiThemeProvider(muiTheme = theme)(
