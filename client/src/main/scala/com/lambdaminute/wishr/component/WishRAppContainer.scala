@@ -16,6 +16,7 @@ import scala.scalajs.js
 import scala.util.{Failure, Success}
 import scala.scalajs.js.timers._
 import scalacss.Attrs.color
+import scala.concurrent.duration._
 
 object WishRAppContainer {
 
@@ -153,30 +154,34 @@ object WishRAppContainer {
         }
 
       def fetchWishes() =
-        Ajax
-          .get(s"./entries",
-               headers = Map("Content-Type"  -> "application/json",
-                             "Authorization" -> S.authorizationSecret.mkString))
-          .onComplete {
-            case Success(msg) =>
-              val wishes = read[List[Wish]](msg.responseText)
-              println(s"Got wishes: $wishes")
-              $.modState(_.copy(wishes = wishes, currentPage = WishList)).runNow()
-            case Failure(AjaxException(xhr)) =>
-              println(s"Exception: ${xhr.responseText}")
-              $.modState(
-                _.copy(authorizationSecret = None,
-                       currentPage = Login,
-                       snackBarText = xhr.responseText,
-                       snackBarOpen = true)).runNow()
-            case Failure(err) =>
-              println(err.getMessage)
-              $.modState(
-                _.copy(authorizationSecret = None,
-                       currentPage = Login,
-                       snackBarText = err.getMessage,
-                       snackBarOpen = true)).runNow()
-          }
+        js.timers.setTimeout(1.5.seconds) { //It's a bad experience to flash the loading wheel
+          Ajax
+            .get(s"./entries",
+                 headers = Map("Content-Type"  -> "application/json",
+                               "Authorization" -> S.authorizationSecret.mkString))
+            .onComplete {
+              case Success(msg) =>
+                val wishes = read[List[Wish]](msg.responseText)
+                println(s"Got wishes: $wishes")
+                $.modState(_.copy(wishes = wishes, currentPage = WishList)).runNow()
+              case Failure(AjaxException(xhr)) =>
+                println(s"Exception: ${xhr.responseText}")
+                $.modState(
+                  _.copy(authorizationSecret = None,
+                         currentPage = Login,
+                         snackBarText = xhr.responseText,
+                         snackBarOpen = true)
+                ).runNow()
+              case Failure(err) =>
+                println(err.getMessage)
+                $.modState(
+                  _.copy(authorizationSecret = None,
+                         currentPage = Login,
+                         snackBarText = err.getMessage,
+                         snackBarOpen = true)
+                ).runNow()
+            }
+        }
 
       def updateWishes(f: List[Wish] => List[Wish]): Unit =
         $.modState(s => {
