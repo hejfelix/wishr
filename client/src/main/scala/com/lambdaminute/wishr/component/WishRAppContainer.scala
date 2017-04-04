@@ -91,7 +91,7 @@ object WishRAppContainer {
 
     def render(P: Props, S: State) = {
 
-      def showSnackSnackBarBar: (String) => Unit =
+      def showSnackBar: (String) => Unit =
         (withText: String) =>
           $.modState(_.copy(snackBarText = withText, snackBarOpen = true)).runNow()
 
@@ -219,7 +219,7 @@ object WishRAppContainer {
             S.userName.mkString,
             S.wishes,
             S.authorizationSecret.mkString,
-            show,
+            showSnackBar,
             S.editingWishes,
             startEditing,
             stopEditing,
@@ -304,13 +304,37 @@ object WishRAppContainer {
           Callback.info(s"toggle drawer $b $s") >> $.modState(s =>
             s.copy(drawerOpen = !s.drawerOpen))
 
+      val fileBugs = MuiMenuItem(
+        key = "fileBugsMenuItem",
+        primaryText = "Submit Bug Reports",
+        onTouchTap = (r: ReactEventH) =>
+          Callback(
+            org.scalajs.dom.window
+              .open(url = "https://github.com/hejfelix/wishr/issues", target = "_blank")
+        )
+      )()
+
+      val contribute = MuiMenuItem(
+        key = "contributeMenuItem",
+        primaryText = "Contribute",
+        onTouchTap = (r: ReactEventH) =>
+          Callback(
+            org.scalajs.dom.window
+              .open(url = "https://github.com/hejfelix/wishr/", target = "_blank")
+        )
+      )()
+
+      val loggedIn = S.userName.isDefined && S.authorizationSecret.isDefined
       val drawer =
         MuiDrawer(open = S.drawerOpen, docked = false, onRequestChange = toggleDrawerOpen)(
           title,
           version,
-          logout,
-          getLinkForSharing,
-          toggleThemeMenuItem)
+          if (loggedIn) logout else null,
+          if (loggedIn) getLinkForSharing else null,
+          toggleThemeMenuItem,
+          fileBugs,
+          contribute)
+
 
       val dialog = MuiDialog(
         title = S.dialogText,
