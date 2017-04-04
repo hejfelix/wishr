@@ -121,7 +121,8 @@ object EditWishesPage {
 
       lazy val wishCards = <.div(
         ^.cls := "CardsList",
-        ReactCssTransitionGroup("wish", component = "div")(cards)
+        ReactCssTransitionGroup("wish", component = "div", enterTimeout = 400, leaveTimeout = 400)(
+          cards)
       )
 
       lazy val actions: ReactNode = List(

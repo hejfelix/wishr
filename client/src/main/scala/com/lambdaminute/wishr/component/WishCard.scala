@@ -139,11 +139,11 @@ object WishCard {
       println(priceRunnerURLEncoded)
 
       val amazonSearchButton =
-        MuiFlatButton(
-          onClick = (_: ReactEventH) =>
-            Callback(
-              org.scalajs.dom.window.open(url = amazonURLEncoded, target = "_blank")
-          ))(
+        MuiFlatButton(label = "",
+                      onClick = (_: ReactEventH) =>
+                        Callback(
+                          org.scalajs.dom.window.open(url = amazonURLEncoded, target = "_blank")
+                      ))(
           <.img(
             ^.src := "./graphics/amazon.svg",
             ^.height := "32px",
@@ -152,6 +152,7 @@ object WishCard {
         )
       val priceRunnerSearchButton =
         MuiFlatButton(
+          label = "",
           onClick = (_: ReactEventH) =>
             Callback(
               org.scalajs.dom.window.open(url = priceRunnerURLEncoded, target = "_blank")
@@ -169,7 +170,7 @@ object WishCard {
         priceRunnerSearchButton
       )
 
-      val wishCardActions = <.div(
+      lazy val wishCardActions = <.div(
         ^.cls := "WishCard-Actions",
         <.hr(),
         MuiFlatButton(key = "edit",
@@ -199,8 +200,7 @@ object WishCard {
                       onClick = (rh: ReactEventH) => props.onFinishedUpdate(props.startingState))()
       )
 
-
-      val readOnlyAction = <.div(
+      lazy val readOnlyAction = <.div(
         ^.cls := "WishCard-Actions",
         <.hr(),
         <.div(^.cls := "WishCard-Actions",

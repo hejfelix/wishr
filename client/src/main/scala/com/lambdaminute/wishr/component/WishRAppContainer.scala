@@ -39,10 +39,10 @@ object WishRAppContainer {
     ReactComponentB[Props]("WishRAppContainer")
       .initialState(State())
       .renderBackend[Backend]
-      .componentWillReceiveProps { receiveBlob =>
-        val p = receiveBlob.nextProps
-        val $ = receiveBlob.$
-        $.modState(_.copy(authorizationSecret = p.authorizationSecret, userName = p.userName))
+      .componentDidMount { blob =>
+        println("Did mount app containerS")
+        val p = blob.props
+        blob.modState(_.copy(authorizationSecret = p.authorizationSecret, userName = p.userName))
       }
       .build
 
@@ -90,6 +90,8 @@ object WishRAppContainer {
     }
 
     def render(P: Props, S: State) = {
+
+      println(S)
 
       def showSnackBar: (String) => Unit =
         (withText: String) =>
@@ -335,7 +337,6 @@ object WishRAppContainer {
           fileBugs,
           contribute)
 
-
       val dialog = MuiDialog(
         title = S.dialogText,
         open = S.dialogOpen,
@@ -357,15 +358,18 @@ object WishRAppContainer {
           Mui.Styles.getMuiTheme(withBaseColor(darkRawTheme)(Mui.Styles.colors.cyan700))
       }
 
-      println("SOMETHING OUTRAGEOUS")
-
       MuiMuiThemeProvider(muiTheme = theme)(
-        <.div(muiAppBar,
-              ReactCssTransitionGroup("wish", component = "div")(
-                <.div(^.key := S.currentPage.toString, ^.cls := "page", page)),
-              snackBar,
-              dialog,
-              drawer))
+        <.div(
+          muiAppBar,
+          ReactCssTransitionGroup(
+            "wish",
+            component = "div",
+            enterTimeout = 300,
+            leaveTimeout = 300)(<.div(^.key := S.currentPage.toString, ^.cls := "page", page)),
+          snackBar,
+          dialog,
+          drawer
+        ))
     }
 
   }

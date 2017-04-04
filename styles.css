@@ -44,10 +44,11 @@ hr {
 }
 
 .page {
-    position: fixed;
+    position: absolute;
     top: 64;
-    zIndex: -1000;
+    /*zIndex: -1000;*/
     width: 100%;
+    overflow-y: auto;
 }
 
 .clearfix:after {
