@@ -139,30 +139,32 @@ object WishCard {
       println(priceRunnerURLEncoded)
 
       val amazonSearchButton =
-        MuiFlatButton(label = "",
-                      onClick = (_: ReactEventH) =>
-                        Callback(
-                          org.scalajs.dom.window.open(url = amazonURLEncoded, target = "_blank")
-                      ))(
-          <.img(
+        MuiFlatButton(
+          label = "",
+          icon = <.img(
             ^.src := "./graphics/amazon.svg",
             ^.height := "32px",
             ^.width := "32px"
+          ),
+          onClick = (_: ReactEventH) =>
+            Callback(
+              org.scalajs.dom.window.open(url = amazonURLEncoded, target = "_blank")
           )
-        )
+        )()
       val priceRunnerSearchButton =
         MuiFlatButton(
           label = "",
-          onClick = (_: ReactEventH) =>
-            Callback(
-              org.scalajs.dom.window.open(url = priceRunnerURLEncoded, target = "_blank")
-          ))(
-          <.img(
+          icon = <.img(
             ^.src := "./graphics/pricerunner.svg",
             ^.height := "32px",
             ^.width := "32px"
+          ),
+          onClick = (_: ReactEventH) =>
+            Callback(
+              org.scalajs.dom.window.open(url = priceRunnerURLEncoded, target = "_blank")
           )
-        )
+        )(
+          )
 
       val searchButtons = <.div(
         ^.cls := "WishCard-Search",
@@ -204,11 +206,11 @@ object WishCard {
         ^.cls := "WishCard-Actions",
         <.hr(),
         <.div(^.cls := "WishCard-Actions",
-              MuiFlatButton(key = "", label = "", primary = true)(),
+              MuiFlatButton(key = "button", label = " ", primary = true)(),
               searchButtons)
       )
 
-      val readOnlyContent = <.div(^.cls := "WishCard", wishCardContent, readOnlyAction)
+      lazy val readOnlyContent = <.div(^.cls := "WishCard", wishCardContent, readOnlyAction)
 
       val editableContent = <.div(
         ^.cls := "WishCard",
