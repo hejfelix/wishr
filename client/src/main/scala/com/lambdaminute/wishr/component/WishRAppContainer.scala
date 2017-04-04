@@ -18,6 +18,14 @@ import scala.scalajs.js.timers._
 import scalacss.Attrs.color
 import scala.concurrent.duration._
 
+
+import chandu0101.scalajs.react.components.materialui.Mui.SvgIcons.SocialShare
+
+import chandu0101.scalajs.react.components.materialui.Mui.SvgIcons.ActionExitToApp
+import chandu0101.scalajs.react.components.materialui.Mui.SvgIcons.ActionBugReport
+import chandu0101.scalajs.react.components.materialui.Mui.SvgIcons.ActionCode
+import chandu0101.scalajs.react.components.materialui.Mui.SvgIcons.ImageStyle
+
 object WishRAppContainer {
 
   sealed trait Page
@@ -268,6 +276,7 @@ object WishRAppContainer {
       val logout = MuiMenuItem(
         key = "logout",
         primaryText = "Logout",
+        leftIcon = ActionExitToApp()(),
         onTouchTap = (r: ReactEventH) => {
           println("Resetting cookie...")
           org.scalajs.dom.document.cookie = "authsecret=;Max-Age=0"
@@ -291,6 +300,7 @@ object WishRAppContainer {
       val getLinkForSharing = MuiMenuItem(
         key = "getSharingLink",
         primaryText = "Get link for sharing",
+        rightIcon = SocialShare()(),
         onTouchTap = (r: ReactEventH) => Callback(showSharingLink)
       )()
 
@@ -302,6 +312,7 @@ object WishRAppContainer {
 
       val toggleThemeMenuItem = MuiMenuItem(
         key = "ToggleTheme",
+        rightIcon = ImageStyle()(),
         primaryText = s"${S.theme.name} Theme",
         onTouchTap = (r: ReactEventH) => $.modState(toggleTheme)
       )()
@@ -314,6 +325,7 @@ object WishRAppContainer {
       val fileBugs = MuiMenuItem(
         key = "fileBugsMenuItem",
         primaryText = "Submit Bug Reports",
+        rightIcon = ActionBugReport()(),
         onTouchTap = (r: ReactEventH) =>
           Callback(
             org.scalajs.dom.window
@@ -324,6 +336,7 @@ object WishRAppContainer {
       val contribute = MuiMenuItem(
         key = "contributeMenuItem",
         primaryText = "Contribute",
+        rightIcon = ActionCode()(),
         onTouchTap = (r: ReactEventH) =>
           Callback(
             org.scalajs.dom.window
