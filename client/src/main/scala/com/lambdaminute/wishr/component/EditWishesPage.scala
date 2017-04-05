@@ -65,8 +65,8 @@ object EditWishesPage {
       e => {
         val defaultWish = Wish("", "", None)
         val props       = $.props.runNow()
-        Callback(props.updateWishes(addWish(defaultWish))) >> Callback(
-          props.startEditing(defaultWish))
+        Callback(props.updateWishes(addWish(defaultWish))) >>
+          Callback(props.startEditing(defaultWish))
       }
 
     def handleDialogCancel: ReactEventH => Callback =

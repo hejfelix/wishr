@@ -1,19 +1,15 @@
 package com.lambdaminute.wishr.component
 
+import chandu0101.scalajs.react.components.Implicits._
 import chandu0101.scalajs.react.components.materialui._
 import com.lambdaminute.wishr.model.Wish
-import derive.key
 import japgolly.scalajs.react._
-import japgolly.scalajs.react.vdom.{Frag, ReactTagOf}
+import japgolly.scalajs.react.vdom.Frag
 import japgolly.scalajs.react.vdom.prefix_<^._
-import org.scalajs.dom.html.Image
 
-import scala.scalajs
 import scala.scalajs.js
-import scala.scalajs.js.{Any, URIUtils}
-import scalaz.Alpha.S
-import chandu0101.scalajs.react.components.Implicits._
-import japgolly.scalajs.react.Addons.ReactCssTransitionGroup
+import scala.scalajs.js.URIUtils
+import chandu0101.scalajs.react.components.materialui.Mui.SvgIcons.ActionCardGiftcard
 object WishCard {
 
   case class State(wish: Wish)
@@ -86,11 +82,8 @@ object WishCard {
     }
 
     def createImage(image: Option[String]): Frag = image match {
-      case Some(url) => <.img(^.src := url)
-      case None =>
-        _react_fragReactNode(
-          lookupIcon("ImagePhoto").apply(
-            style = js.Dynamic.literal(width = "48px", height = "48px"))())
+      case Some(url) if !url.isEmpty => <.img(^.src := url)
+      case _ => ActionCardGiftcard.apply()()
     }
 
     def render(S: State, props: Props) = {

@@ -18,7 +18,6 @@ import scala.scalajs.js.timers._
 import scalacss.Attrs.color
 import scala.concurrent.duration._
 
-
 import chandu0101.scalajs.react.components.materialui.Mui.SvgIcons.SocialShare
 
 import chandu0101.scalajs.react.components.materialui.Mui.SvgIcons.ActionExitToApp
@@ -116,13 +115,15 @@ object WishRAppContainer {
         l.takeWhile(_ != t) ++ l.dropWhile(_ != t).drop(1)
 
       def stopEditing(w: Wish, newState: Wish) =
-        $.modState(
-          s =>
-            persist(s.copy(editingWishes = dropFirstMatch(s.editingWishes, w),
-                           wishes = changeWish(w, newState)(s.wishes))))
-          .runNow()
+        $.modState(s => {
+          val newWishes =
+            if (newState.isEmpty) s.wishes.filterNot(_.isEmpty)
+            else changeWish(w, newState)(s.wishes)
+          persist(s.copy(editingWishes = dropFirstMatch(s.editingWishes, w), wishes = newWishes),
+                  showSnackbar = newState.isEmpty)
+        }).runNow()
 
-      def persist(state: State): State = {
+      def persist(state: State, showSnackbar: Boolean = true): State = {
         Ajax
           .post(s"./set",
                 write[List[Wish]](state.wishes),
@@ -132,15 +133,18 @@ object WishRAppContainer {
             case Success(msg) =>
               val snackText = s"Succesfully persisted state"
               println(msg.responseText)
-              showSnackBar(msg.responseText)
+              if (showSnackbar)
+                showSnackBar(msg.responseText)
             case Failure(AjaxException(xhr)) =>
               val snackText = s"Error persisting state ${xhr.responseType}: ${xhr.responseText}"
               println(snackText)
-              showSnackBar(snackText)
+              if (showSnackbar)
+                showSnackBar(snackText)
             case Failure(err) =>
               val snackText = s"Error persisting state ${err}: ${err.getMessage()}"
               println(snackText)
-              showSnackBar(snackText)
+              if (showSnackbar)
+                showSnackBar(snackText)
           }
         state
       }
@@ -197,7 +201,8 @@ object WishRAppContainer {
           if (newState == s) {
             s
           } else {
-            persist(s.copy(wishes = f(s.wishes)))
+            val showSnackbar = !newState.headOption.exists(_.isEmpty)
+            persist(s.copy(wishes = f(s.wishes)), showSnackbar)
           }
         }).runNow()
 
@@ -371,7 +376,7 @@ object WishRAppContainer {
           val theme = Mui.Styles.LightRawTheme
           Mui.Styles.getMuiTheme(withBaseColor(theme)(Mui.Styles.colors.lightBlue200))
         case Dark =>
-          document.body.style.backgroundColor = "#121212"
+          document.body.style.backgroundColor = "#434343"
           val darkRawTheme = Mui.Styles.DarkRawTheme
           Mui.Styles.getMuiTheme(withBaseColor(darkRawTheme)(Mui.Styles.colors.grey500))
       }
