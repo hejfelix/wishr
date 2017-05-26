@@ -41,7 +41,10 @@ case class WishRService(persistence: Persistence[String, String],
           .get(headers.`X-Forwarded-Proto`)
           .map(_.value)
           .getOrElse("") != "https" =>
-      TemporaryRedirect(uri(configuration.rootPath))
+      Uri.fromString(configuration.rootPath) match {
+        case Right(uri)                             => TemporaryRedirect(uri)
+        case Left(ParseFailure(sanitized, details)) => InternalServerError(s"$sanitized, $details")
+      }
   }
 
   val unauthedService: HttpService = HttpService {
