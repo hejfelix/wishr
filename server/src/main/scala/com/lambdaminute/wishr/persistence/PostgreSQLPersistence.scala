@@ -11,7 +11,7 @@ import cats.data._
 import cats.implicits._
 import fs2.interop.cats._
 import com.github.t3hnar.bcrypt._
-import com.lambdaminute.wishr.model.{CreateUserRequest, WishEntry}
+import com.lambdaminute.wishr.model.{CreateUserRequest, Stats, WishEntry}
 import fs2.Task
 import cats.data.EitherT
 
@@ -106,6 +106,27 @@ case class PostgreSQLPersistence(dbconf: DBConfig) extends Persistence[String, S
       {
         token
       }
+  }
+
+  def getStats(): PersistenceResponse[Stats] = {
+    EitherT(sql"""
+         SELECT  (
+                 SELECT COUNT(*)
+                 FROM   wishes
+                 ) AS numberOfWishes,
+                 (
+                 SELECT COUNT(*)
+                 FROM   granted
+                 ) AS numberOfGranted,
+                 (
+                 SELECT COUNT(*)
+                 FROM   users
+                 ) AS numberOfUsers
+          """
+          .query[Stats]
+          .option
+          .map(_.toRight("Table missing for stats"))
+          .transact(xa))
   }
 
   private def newSecret = java.util.UUID.randomUUID.toString

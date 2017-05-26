@@ -52,6 +52,12 @@ case class WishRService(persistence: Persistence[String, String],
     case GET -> Root / "status" =>
       Ok()
 
+    case GET -> Root / "stats" =>
+      persistence.getStats().value.flatMap {
+        case Right(stats) => Ok(stats)(jsonEncoderOf[Stats])
+        case Left(err)    => InternalServerError(err)
+      }
+
     case GET -> Root / "shared-wishes" / secretURL =>
       println(s"Fetching shared wishes for url $secretURL")
       val entries: EitherT[Task, String, List[WishEntry]] = for {

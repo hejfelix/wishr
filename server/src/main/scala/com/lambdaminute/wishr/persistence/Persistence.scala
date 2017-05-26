@@ -1,7 +1,7 @@
 package com.lambdaminute.wishr.persistence
 
 import cats.data.EitherT
-import com.lambdaminute.wishr.model.{CreateUserRequest, WishEntry}
+import com.lambdaminute.wishr.model.{CreateUserRequest, Stats, WishEntry}
 import fs2.Task
 
 trait Persistence[Error, Secret] {
@@ -9,6 +9,8 @@ trait Persistence[Error, Secret] {
   type PersistenceResponse[T] = EitherT[Task, Error, T]
 
   def logIn(user: String, hash: String): PersistenceResponse[String]
+
+  def getStats(): PersistenceResponse[Stats]
 
   def getSecretFor(user: String): PersistenceResponse[Secret]
 

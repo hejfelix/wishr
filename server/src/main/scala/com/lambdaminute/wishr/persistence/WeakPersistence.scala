@@ -3,7 +3,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 
 import com.github.t3hnar.bcrypt._
-import com.lambdaminute.wishr.model.{CreateUserRequest, UserSecret, WishEntry}
+import com.lambdaminute.wishr.model.{CreateUserRequest, Stats, UserSecret, WishEntry}
 
 case class WeakPersistence() extends Persistence[String, String] {
 
@@ -106,4 +106,6 @@ case class WeakPersistence() extends Persistence[String, String] {
   override def userForSecretURL(secret: String): PersistenceResponse[String] = ???
 
   override def grant(entry: WishEntry): PersistenceResponse[String] = ???
+
+  override def getStats(): PersistenceResponse[Stats] = ???
 }
