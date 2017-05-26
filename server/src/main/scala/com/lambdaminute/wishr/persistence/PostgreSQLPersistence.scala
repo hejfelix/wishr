@@ -18,11 +18,11 @@ import cats.data.EitherT
 case class PostgreSQLPersistence(dbconf: DBConfig) extends Persistence[String, String] {
 
   val xa = DriverManagerTransactor[Task](
-                                          "org.postgresql.Driver",
-                                          dbconf.url + "?sslmode=require",
-                                          dbconf.user,
-                                          dbconf.password
-                                        )
+    "org.postgresql.Driver",
+    dbconf.url + (if (dbconf.ssl) "?sslmode=require" else ""),
+    dbconf.user,
+    dbconf.password
+  )
 
   val createUsersTable: Update0 =
     sql"""

@@ -56,7 +56,7 @@ object LoginPage {
               P.handleLogin(Right(user))
             case Failure(err) =>
               println(s"Error logging in: $err")
-              P.handleLogin(Left(err.getMessage))
+              P.handleLogin(Left("Login error, please check your credentials."))
           }
       }
 

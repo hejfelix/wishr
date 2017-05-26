@@ -87,7 +87,7 @@ object WishRAppContainer {
     def handleLogin(user: Either[String, User]) {
       user match {
         case Left(msg) =>
-          $.modState(_.copy(errorMessage = Option(msg))).runNow()
+          $.modState(_.copy(snackBarText = msg, snackBarOpen = true)).runNow()
         case Right(user) =>
           $.modState(
             _.copy(authorizationSecret = Option(user.secret),

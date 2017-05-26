@@ -13,7 +13,7 @@ object WishRApplication extends ServerApp {
 
   //How to use this with ServerApp, since it expects Task[Server] and no Try[...]
   val configuration: ApplicationConf = loadConfig[ApplicationConf]("wishrSettings").get
-  val dbConf                         = DBConfig.fromStringUrl(configuration.dburl)
+  val dbConf                         = DBConfig.fromStringUrl(configuration.dburl,configuration.dbssl)
 
   val persistenceModule = new PersistenceModule()
   val persistence: ModuleOr[Persistence[String, String]] =
