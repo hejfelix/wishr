@@ -84,7 +84,7 @@ case class PostgreSQLPersistence(dbconf: DBConfig) extends Persistence[String, S
   override def logIn(email: String, hash: String): PersistenceResponse[String] = {
 
     val selectEmail =
-      sql"""SELECT email, hashedPassword FROM users WHERE email=$email""".query[UserPass]
+      sql"""SELECT email, hashedPassword FROM users WHERE lower(email)=lower($email)""".query[UserPass]
 
     val userPass: Task[Option[UserPass]] =
       selectEmail.option
