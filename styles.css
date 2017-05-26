@@ -7,6 +7,11 @@ body {
     background-color: #b7e9ff;
 }
 
+::-webkit-scrollbar {
+    width: 0px;  /* remove scrollbar space */
+    background: transparent;  /* optional: just make scrollbar invisible */
+}
+
 .UserCard p {
     padding-top: 32px;
     padding-left: 32px;

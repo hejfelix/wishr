@@ -1,14 +1,15 @@
 package com.lambdaminute.wishr.component
 import chandu0101.scalajs.react.components.Implicits._
 import chandu0101.scalajs.react.components.materialui._
-import com.lambdaminute.wishr.model.{LoginRequest, User, Wish}
+import com.lambdaminute.wishr.model.{LoginRequest, Stats, User, Wish}
 import com.lambdaminute.wishr.serialization.OptionPickler.write
+import japgolly.scalajs.react.Addons.ReactCssTransitionGroup
 import japgolly.scalajs.react._
-import japgolly.scalajs.react.vdom.prefix_<^._
+import japgolly.scalajs.react.vdom.prefix_<^.{<, _}
 import org.scalajs.dom.ext.Ajax
+import org.scalajs.dom.html.Div
 
 import scala.concurrent.ExecutionContext.Implicits.global
-
 import scala.util.{Failure, Success}
 import scalaz.Alpha.{P, S}
 
@@ -19,10 +20,14 @@ object LoginPage {
     .renderBackend[Backend]
     .build
 
-  def apply(onLogin: Either[String, User] => Unit, goToCreateUserPage: Callback) =
-    component(Props(onLogin, goToCreateUserPage))
+  def apply(onLogin: Either[String, User] => Unit,
+            goToCreateUserPage: Callback,
+            stats: Option[Stats]) =
+    component(Props(onLogin, goToCreateUserPage, stats))
 
-  case class Props(handleLogin: Either[String, User] => Unit, goToCreateUserPage: Callback)
+  case class Props(handleLogin: Either[String, User] => Unit,
+                   goToCreateUserPage: Callback,
+                   stats: Option[Stats])
 
   case class State(name: String, password: String)
 
@@ -40,7 +45,7 @@ object LoginPage {
         $.modState(_.copy(password = e.target.value))
       }
 
-    def render(S: State, P: Props) = {
+    def render(S: State, P: Props): ReactTagOf[Div] = {
 
       val sendLogin = Callback {
         println(s"Trying to log in with: ${write[LoginRequest](LoginRequest(S.name, S.password))}")
@@ -81,6 +86,14 @@ object LoginPage {
                                               onClick = (r: ReactEventH) => P.goToCreateUserPage)()
       val createSection = <.div()
 
+      val statsCard = P.stats.map(
+        s =>
+          MuiPaper()(
+            <.h3(s"Number of users: ${s.numberOfUsers}"),
+            <.h3(s"Number of wishes: ${s.numberOfWishes}"),
+            <.h3(s"Number wishes that have been granted: ${s.numberOfGranted}")
+        ))
+
       <.div(
         MuiPaper()(
           <.div(^.cls := "Card",
@@ -89,7 +102,10 @@ object LoginPage {
                 loginButton,
                 "or",
                 createNewUserButton,
-                createSection)))
+                createSection)),
+        ReactCssTransitionGroup("wish", component = "div", enterTimeout = 300, leaveTimeout = 300)(
+          statsCard.getOrElse(null))
+      )
     }
 
   }

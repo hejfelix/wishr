@@ -1,9 +1,9 @@
 package com.lambdaminute.wishr.component
 
-import cats.syntax.show
 import chandu0101.scalajs.react.components.Implicits._
+import chandu0101.scalajs.react.components.materialui.Mui.SvgIcons._
 import chandu0101.scalajs.react.components.materialui.{Mui, MuiFlatButton, MuiMuiThemeProvider, _}
-import com.lambdaminute.wishr.model.{User, Wish}
+import com.lambdaminute.wishr.model.{Stats, User, Wish}
 import com.lambdaminute.wishr.serialization.OptionPickler.{read, write}
 import japgolly.scalajs.react.Addons.ReactCssTransitionGroup
 import japgolly.scalajs.react.vdom.prefix_<^.{<, ^, _}
@@ -12,18 +12,9 @@ import org.scalajs.dom.document
 import org.scalajs.dom.ext.{Ajax, AjaxException}
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 import scala.scalajs.js
 import scala.util.{Failure, Success}
-import scala.scalajs.js.timers._
-import scalacss.Attrs.color
-import scala.concurrent.duration._
-
-import chandu0101.scalajs.react.components.materialui.Mui.SvgIcons.SocialShare
-
-import chandu0101.scalajs.react.components.materialui.Mui.SvgIcons.ActionExitToApp
-import chandu0101.scalajs.react.components.materialui.Mui.SvgIcons.ActionBugReport
-import chandu0101.scalajs.react.components.materialui.Mui.SvgIcons.ActionCode
-import chandu0101.scalajs.react.components.materialui.Mui.SvgIcons.ImageStyle
 
 object WishRAppContainer {
 
@@ -50,9 +41,24 @@ object WishRAppContainer {
       .componentDidMount { blob =>
         println("Did mount app containerS")
         val p = blob.props
+        fetchStats { stats =>
+          js.timers.setTimeout(0.5.seconds) {
+            println(s"Fetched stats: $stats")
+            blob.modState(s => s.copy(stats = Option(stats))).runNow()
+          }
+        }
         blob.modState(_.copy(authorizationSecret = p.authorizationSecret, userName = p.userName))
       }
       .build
+
+  def fetchStats(withStats: Stats => Unit) =
+    Ajax.get("./stats").onComplete {
+      case Success(msg) =>
+        val stats = read[Stats](msg.responseText)
+        withStats(stats)
+      case Failure(AjaxException(xhr)) =>
+      case Failure(err)                =>
+    }
 
   def apply(version: String, cookieSecret: Option[String], cookieUser: Option[String]) =
     component(Props(version, authorizationSecret = cookieSecret, userName = cookieUser))
@@ -69,6 +75,7 @@ object WishRAppContainer {
   case object Undefined extends ActionLevel
 
   case class State(currentPage: Page = Login,
+                   stats: Option[Stats] = None,
                    userName: Option[String] = None,
                    authorizationSecret: Option[String] = None,
                    theme: Theme = Light,
@@ -224,7 +231,7 @@ object WishRAppContainer {
       val page: ReactElement = S.currentPage match {
         case CreateUser => CreateUserPage(showDialog)
         case Login if !(S.userName.isDefined && S.authorizationSecret.isDefined) =>
-          LoginPage(handleLogin, $.modState(_.copy(currentPage = CreateUser)))
+          LoginPage(handleLogin, $.modState(_.copy(currentPage = CreateUser)), S.stats)
         case Fetching | Login if S.userName.isDefined && S.authorizationSecret.isDefined =>
           fetchWishes()
           <.div(
