@@ -89,10 +89,12 @@ object LoginPage {
       val statsCard = P.stats.map(
         s =>
           MuiPaper()(
-            <.h3(s"Number of users: ${s.numberOfUsers}"),
-            <.h3(s"Number of wishes: ${s.numberOfWishes}"),
-            <.h3(s"Number wishes that have been granted: ${s.numberOfGranted}")
-        ))
+            <.h3("Stats"),
+            <.div(s"Number of users: ${s.numberOfUsers}"),
+            <.div(s"Number of wishes: ${s.numberOfWishes}"),
+            <.div(s"Number wishes that have been granted: ${s.numberOfGranted}")
+        )
+      )
 
       <.div(
         MuiPaper()(
