@@ -41,7 +41,7 @@ case class WishRService(persistence: Persistence[String, String],
           .get(headers.`X-Forwarded-Proto`)
           .map(_.value)
           .getOrElse("") != "https" =>
-      Forbidden(s"For security reasons, please use https at ${configuration.rootPath}")
+      TemporaryRedirect(uri(configuration.rootPath))
   }
 
   val unauthedService: HttpService = HttpService {
