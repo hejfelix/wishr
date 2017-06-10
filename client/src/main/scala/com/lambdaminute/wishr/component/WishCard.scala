@@ -83,7 +83,7 @@ object WishCard {
 
     def createImage(image: Option[String]): Frag = image match {
       case Some(url) if !url.isEmpty => <.img(^.src := url)
-      case _ => ActionCardGiftcard.apply()()
+      case _                         => ActionCardGiftcard.apply()()
     }
 
     def render(S: State, props: Props) = {
@@ -128,6 +128,8 @@ object WishCard {
         URIUtils.encodeURI(s"http://www.pricerunner.dk/search?q=${S.wish.heading}")
       val amazonURLEncoded =
         URIUtils.encodeURI(s"https://www.amazon.co.uk/s/?field-keywords=${S.wish.heading}")
+      val googleURLEncoded =
+        URIUtils.encodeURI(s"https://www.google.dk/#q=${S.wish.heading}&tbm=shop")
 
       println(priceRunnerURLEncoded)
 
@@ -155,14 +157,29 @@ object WishCard {
           onClick = (_: ReactEventH) =>
             Callback(
               org.scalajs.dom.window.open(url = priceRunnerURLEncoded, target = "_blank")
-          )
+            )
         )(
-          )
+        )
+      val googleShopButton =
+        MuiFlatButton(
+          label = "",
+          icon = <.img(
+            ^.src := "./graphics/google.svg",
+            ^.height := "32px",
+            ^.width := "32px"
+          ),
+          onClick = (_: ReactEventH) =>
+            Callback(
+              org.scalajs.dom.window.open(url = googleURLEncoded, target = "_blank")
+            )
+        )(
+        )
 
       val searchButtons = <.div(
         ^.cls := "WishCard-Search",
         amazonSearchButton,
-        priceRunnerSearchButton
+        priceRunnerSearchButton,
+        googleShopButton
       )
 
       lazy val wishCardActions = <.div(
