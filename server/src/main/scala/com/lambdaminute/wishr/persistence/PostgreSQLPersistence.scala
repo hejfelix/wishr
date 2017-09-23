@@ -6,7 +6,7 @@ import org.h2.tools.Server
 import cats._
 import cats.data._
 import cats.implicits._
-import com.github.t3hnar.bcrypt._
+//import com.github.t3hnar.bcrypt._
 import com.lambdaminute.wishr.model.{CreateUserRequest, Stats, WishEntry}
 
 import cats.data.EitherT

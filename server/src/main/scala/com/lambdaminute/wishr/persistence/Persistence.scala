@@ -1,7 +1,9 @@
 package com.lambdaminute.wishr.persistence
 
 import cats.data.EitherT
+import com.lambdaminute.wishr.model.tags.WishId
 import com.lambdaminute.wishr.model.{CreateUserRequest, Stats, WishEntry}
+import shapeless.tag.@@
 
 trait Persistence[F[_], Error, Secret] {
 
@@ -23,12 +25,18 @@ trait Persistence[F[_], Error, Secret] {
 
   def userForSecretURL(secret: String): PersistenceResponse[String]
 
-  def set(entries: List[WishEntry], forEmail: String): PersistenceResponse[String]
+  def createWish(email: String,
+                 heading: String,
+                 descr: String,
+                 imageUrl: Option[String]): PersistenceResponse[Int @@ WishId]
 
   def finalize(registrationToken: String): PersistenceResponse[String]
 
-  def createUser(createUserRequest: CreateUserRequest,
-                 activationToken: String): PersistenceResponse[String]
+  def createUser(firstName: String,
+                 lastName: String,
+                 email: String,
+                 password: String,
+                 activationToken: String): PersistenceResponse[Int]
 
-  def grant(entry: WishEntry): PersistenceResponse[String]
+  def grant(wishId: Int @@ WishId): PersistenceResponse[Int]
 }

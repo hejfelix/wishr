@@ -21,24 +21,26 @@ trait Tables {
 
   /** Entity class storing rows of table Secrets
    *  @param email Database column email SqlType(varchar), Default(None)
-   *  @param secret Database column secret SqlType(varchar), Default(None)
-   *  @param expirationdate Database column expirationdate SqlType(timestamp), Default(None) */
-  case class SecretsRow(email: Option[String] = None, secret: Option[String] = None, expirationdate: Option[java.sql.Timestamp] = None)
+   *  @param secret Database column secret SqlType(varchar)
+   *  @param expirationdate Database column expirationdate SqlType(timestamp) */
+  case class SecretsRow(email: Option[String] = None, secret: String, expirationdate: java.sql.Timestamp)
   /** GetResult implicit for fetching SecretsRow objects using plain SQL queries */
-  implicit def GetResultSecretsRow(implicit e0: GR[Option[String]], e1: GR[Option[java.sql.Timestamp]]): GR[SecretsRow] = GR{
+  implicit def GetResultSecretsRow(implicit e0: GR[Option[String]], e1: GR[String], e2: GR[java.sql.Timestamp]): GR[SecretsRow] = GR{
     prs => import prs._
-    SecretsRow.tupled((<<?[String], <<?[String], <<?[java.sql.Timestamp]))
+    SecretsRow.tupled((<<?[String], <<[String], <<[java.sql.Timestamp]))
   }
   /** Table description of table secrets. Objects of this class serve as prototypes for rows in queries. */
   class Secrets(_tableTag: Tag) extends profile.api.Table[SecretsRow](_tableTag, "secrets") {
     def * = (email, secret, expirationdate) <> (SecretsRow.tupled, SecretsRow.unapply)
+    /** Maps whole row to an option. Useful for outer joins. */
+    def ? = (email, Rep.Some(secret), Rep.Some(expirationdate)).shaped.<>({r=>import r._; _2.map(_=> SecretsRow.tupled((_1, _2.get, _3.get)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
 
     /** Database column email SqlType(varchar), Default(None) */
     val email: Rep[Option[String]] = column[Option[String]]("email", O.Default(None))
-    /** Database column secret SqlType(varchar), Default(None) */
-    val secret: Rep[Option[String]] = column[Option[String]]("secret", O.Default(None))
-    /** Database column expirationdate SqlType(timestamp), Default(None) */
-    val expirationdate: Rep[Option[java.sql.Timestamp]] = column[Option[java.sql.Timestamp]]("expirationdate", O.Default(None))
+    /** Database column secret SqlType(varchar) */
+    val secret: Rep[String] = column[String]("secret")
+    /** Database column expirationdate SqlType(timestamp) */
+    val expirationdate: Rep[java.sql.Timestamp] = column[java.sql.Timestamp]("expirationdate")
 
     /** Foreign key referencing Users (database name secrets_email_fkey) */
     lazy val usersFk = foreignKey("secrets_email_fkey", email, Users)(r => Rep.Some(r.email), onUpdate=ForeignKeyAction.NoAction, onDelete=ForeignKeyAction.NoAction)
@@ -50,72 +52,75 @@ trait Tables {
   lazy val Secrets = new TableQuery(tag => new Secrets(tag))
 
   /** Entity class storing rows of table Users
-   *  @param firstname Database column firstname SqlType(varchar), Default(None)
-   *  @param lastname Database column lastname SqlType(varchar), Default(None)
+   *  @param firstname Database column firstname SqlType(varchar)
+   *  @param lastname Database column lastname SqlType(varchar)
    *  @param email Database column email SqlType(varchar), PrimaryKey
-   *  @param hashedpassword Database column hashedpassword SqlType(varchar), Default(None)
-   *  @param secreturl Database column secreturl SqlType(varchar), Default(None)
-   *  @param registrationtoken Database column registrationtoken SqlType(varchar), Default(None)
-   *  @param finalized Database column finalized SqlType(bool), Default(None) */
-  case class UsersRow(firstname: Option[String] = None, lastname: Option[String] = None, email: String, hashedpassword: Option[String] = None, secreturl: Option[String] = None, registrationtoken: Option[String] = None, finalized: Option[Boolean] = None)
+   *  @param hashedpassword Database column hashedpassword SqlType(varchar)
+   *  @param secreturl Database column secreturl SqlType(varchar)
+   *  @param registrationtoken Database column registrationtoken SqlType(varchar)
+   *  @param finalized Database column finalized SqlType(bool) */
+  case class UsersRow(firstname: String, lastname: String, email: String, hashedpassword: String, secreturl: String, registrationtoken: String, finalized: Boolean)
   /** GetResult implicit for fetching UsersRow objects using plain SQL queries */
-  implicit def GetResultUsersRow(implicit e0: GR[Option[String]], e1: GR[String], e2: GR[Option[Boolean]]): GR[UsersRow] = GR{
+  implicit def GetResultUsersRow(implicit e0: GR[String], e1: GR[Boolean]): GR[UsersRow] = GR{
     prs => import prs._
-    UsersRow.tupled((<<?[String], <<?[String], <<[String], <<?[String], <<?[String], <<?[String], <<?[Boolean]))
+    UsersRow.tupled((<<[String], <<[String], <<[String], <<[String], <<[String], <<[String], <<[Boolean]))
   }
   /** Table description of table users. Objects of this class serve as prototypes for rows in queries. */
   class Users(_tableTag: Tag) extends profile.api.Table[UsersRow](_tableTag, "users") {
     def * = (firstname, lastname, email, hashedpassword, secreturl, registrationtoken, finalized) <> (UsersRow.tupled, UsersRow.unapply)
     /** Maps whole row to an option. Useful for outer joins. */
-    def ? = (firstname, lastname, Rep.Some(email), hashedpassword, secreturl, registrationtoken, finalized).shaped.<>({r=>import r._; _3.map(_=> UsersRow.tupled((_1, _2, _3.get, _4, _5, _6, _7)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
+    def ? = (Rep.Some(firstname), Rep.Some(lastname), Rep.Some(email), Rep.Some(hashedpassword), Rep.Some(secreturl), Rep.Some(registrationtoken), Rep.Some(finalized)).shaped.<>({r=>import r._; _1.map(_=> UsersRow.tupled((_1.get, _2.get, _3.get, _4.get, _5.get, _6.get, _7.get)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
 
-    /** Database column firstname SqlType(varchar), Default(None) */
-    val firstname: Rep[Option[String]] = column[Option[String]]("firstname", O.Default(None))
-    /** Database column lastname SqlType(varchar), Default(None) */
-    val lastname: Rep[Option[String]] = column[Option[String]]("lastname", O.Default(None))
+    /** Database column firstname SqlType(varchar) */
+    val firstname: Rep[String] = column[String]("firstname")
+    /** Database column lastname SqlType(varchar) */
+    val lastname: Rep[String] = column[String]("lastname")
     /** Database column email SqlType(varchar), PrimaryKey */
     val email: Rep[String] = column[String]("email", O.PrimaryKey)
-    /** Database column hashedpassword SqlType(varchar), Default(None) */
-    val hashedpassword: Rep[Option[String]] = column[Option[String]]("hashedpassword", O.Default(None))
-    /** Database column secreturl SqlType(varchar), Default(None) */
-    val secreturl: Rep[Option[String]] = column[Option[String]]("secreturl", O.Default(None))
-    /** Database column registrationtoken SqlType(varchar), Default(None) */
-    val registrationtoken: Rep[Option[String]] = column[Option[String]]("registrationtoken", O.Default(None))
-    /** Database column finalized SqlType(bool), Default(None) */
-    val finalized: Rep[Option[Boolean]] = column[Option[Boolean]]("finalized", O.Default(None))
+    /** Database column hashedpassword SqlType(varchar) */
+    val hashedpassword: Rep[String] = column[String]("hashedpassword")
+    /** Database column secreturl SqlType(varchar) */
+    val secreturl: Rep[String] = column[String]("secreturl")
+    /** Database column registrationtoken SqlType(varchar) */
+    val registrationtoken: Rep[String] = column[String]("registrationtoken")
+    /** Database column finalized SqlType(bool) */
+    val finalized: Rep[Boolean] = column[Boolean]("finalized")
   }
   /** Collection-like TableQuery object for table Users */
   lazy val Users = new TableQuery(tag => new Users(tag))
 
   /** Entity class storing rows of table Wishes
-   *  @param email Database column email SqlType(varchar), Default(None)
-   *  @param heading Database column heading SqlType(varchar), Default(None)
-   *  @param description Database column description SqlType(varchar), Default(None)
+   *  @param email Database column email SqlType(varchar)
+   *  @param heading Database column heading SqlType(varchar)
+   *  @param description Database column description SqlType(varchar)
    *  @param imageurl Database column imageurl SqlType(varchar), Default(None)
-   *  @param index Database column index SqlType(int4), Default(None)
+   *  @param index Database column index SqlType(int4)
+   *  @param granted Database column granted SqlType(bool)
    *  @param id Database column id SqlType(serial), AutoInc, PrimaryKey */
-  case class WishesRow(email: Option[String] = None, heading: Option[String] = None, description: Option[String] = None, imageurl: Option[String] = None, index: Option[Int] = None, id: Int)
+  case class WishesRow(email: String, heading: String, description: String, imageurl: Option[String] = None, index: Int, granted: Boolean, id: Int)
   /** GetResult implicit for fetching WishesRow objects using plain SQL queries */
-  implicit def GetResultWishesRow(implicit e0: GR[Option[String]], e1: GR[Option[Int]], e2: GR[Int]): GR[WishesRow] = GR{
+  implicit def GetResultWishesRow(implicit e0: GR[String], e1: GR[Option[String]], e2: GR[Int], e3: GR[Boolean]): GR[WishesRow] = GR{
     prs => import prs._
-    WishesRow.tupled((<<?[String], <<?[String], <<?[String], <<?[String], <<?[Int], <<[Int]))
+    WishesRow.tupled((<<[String], <<[String], <<[String], <<?[String], <<[Int], <<[Boolean], <<[Int]))
   }
   /** Table description of table wishes. Objects of this class serve as prototypes for rows in queries. */
   class Wishes(_tableTag: Tag) extends profile.api.Table[WishesRow](_tableTag, "wishes") {
-    def * = (email, heading, description, imageurl, index, id) <> (WishesRow.tupled, WishesRow.unapply)
+    def * = (email, heading, description, imageurl, index, granted, id) <> (WishesRow.tupled, WishesRow.unapply)
     /** Maps whole row to an option. Useful for outer joins. */
-    def ? = (email, heading, description, imageurl, index, Rep.Some(id)).shaped.<>({r=>import r._; _6.map(_=> WishesRow.tupled((_1, _2, _3, _4, _5, _6.get)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
+    def ? = (Rep.Some(email), Rep.Some(heading), Rep.Some(description), imageurl, Rep.Some(index), Rep.Some(granted), Rep.Some(id)).shaped.<>({r=>import r._; _1.map(_=> WishesRow.tupled((_1.get, _2.get, _3.get, _4, _5.get, _6.get, _7.get)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
 
-    /** Database column email SqlType(varchar), Default(None) */
-    val email: Rep[Option[String]] = column[Option[String]]("email", O.Default(None))
-    /** Database column heading SqlType(varchar), Default(None) */
-    val heading: Rep[Option[String]] = column[Option[String]]("heading", O.Default(None))
-    /** Database column description SqlType(varchar), Default(None) */
-    val description: Rep[Option[String]] = column[Option[String]]("description", O.Default(None))
+    /** Database column email SqlType(varchar) */
+    val email: Rep[String] = column[String]("email")
+    /** Database column heading SqlType(varchar) */
+    val heading: Rep[String] = column[String]("heading")
+    /** Database column description SqlType(varchar) */
+    val description: Rep[String] = column[String]("description")
     /** Database column imageurl SqlType(varchar), Default(None) */
     val imageurl: Rep[Option[String]] = column[Option[String]]("imageurl", O.Default(None))
-    /** Database column index SqlType(int4), Default(None) */
-    val index: Rep[Option[Int]] = column[Option[Int]]("index", O.Default(None))
+    /** Database column index SqlType(int4) */
+    val index: Rep[Int] = column[Int]("index")
+    /** Database column granted SqlType(bool) */
+    val granted: Rep[Boolean] = column[Boolean]("granted")
     /** Database column id SqlType(serial), AutoInc, PrimaryKey */
     val id: Rep[Int] = column[Int]("id", O.AutoInc, O.PrimaryKey)
   }

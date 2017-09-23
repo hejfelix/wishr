@@ -21,6 +21,9 @@ lazy val codegen = project
 lazy val root = (project in file("."))
   .settings(commonSettings)
   .settings(
+    libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % Test
+  )
+  .settings(
     libraryDependencies ++= Seq(
       "org.http4s"         %% "http4s-blaze-server" % http4sVersion,
       "org.http4s"         %% "http4s-dsl"          % http4sVersion,
@@ -28,7 +31,9 @@ lazy val root = (project in file("."))
       "org.http4s"         %% "http4s-circe"        % http4sVersion,
       "com.typesafe.slick" %% "slick"               % slickVersion,
       "com.typesafe.slick" %% "slick-hikaricp"      % slickVersion,
-      "is.cir"             %% "ciris-core"          % cirisVersion
+      "is.cir"             %% "ciris-core"          % cirisVersion,
+      "com.chuusai"        %% "shapeless"           % "2.3.2",
+      "com.github.t3hnar"  %% "scala-bcrypt"        % "3.1"
     ),
 //Java dependencies
     libraryDependencies ++= Seq(
