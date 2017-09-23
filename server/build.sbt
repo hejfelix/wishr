@@ -1,46 +1,53 @@
-scalaVersion := "2.12.1"
+scalaVersion := "2.12.3"
 
-val http4sVersion = "0.16.0-cats-SNAPSHOT"
+resolvers += Resolver.sonatypeRepo("snapshots")
+
+val http4sVersion = "0.18.0-SNAPSHOT"
 
 val circeVersion = "0.7.0"
+val slickVersion = "3.2.1"
+val cirisVersion = "0.4.1"
 
-val doobieVersion = "0.4.1"
-
-resolvers ++= Seq(
-  "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
-  "spray repo" at "http://repo.spray.io"
-)
-
-enablePlugins(SbtTwirl)
-
-
-libraryDependencies ++= Seq(
-  "io.circe" %% "circe-core",
-  "io.circe" %% "circe-generic",
-  "io.circe" %% "circe-parser"
-).map(_ % circeVersion)
-
-libraryDependencies += "com.github.t3hnar" %% "scala-bcrypt" % "3.0"
+scalacOptions ++= Seq("-feature", "-language:higherKinds")
 
 libraryDependencies ++= Seq(
   "org.http4s"         %% "http4s-blaze-server" % http4sVersion,
   "org.http4s"         %% "http4s-dsl"          % http4sVersion,
   "org.http4s"         %% "http4s-argonaut"     % http4sVersion,
   "org.http4s"         %% "http4s-circe"        % http4sVersion,
-  "org.http4s"         %% "http4s-twirl"        % http4sVersion,
-  "org.slf4j"          % "slf4j-simple"         % "1.6.4",
-  "com.github.melrief" %% "pureconfig"          % "0.5.1"
+  "com.typesafe.slick" %% "slick"               % slickVersion,
+  "com.typesafe.slick" %% "slick-hikaricp"      % slickVersion,
+  "com.typesafe.slick" %% "slick-codegen"       % slickVersion,
+  "is.cir"             %% "ciris-core"          % cirisVersion
 )
 
-//Doobie stuff
-libraryDependencies ++= Seq(
-  "org.tpolecat" %% "doobie-core-cats",
-  "org.tpolecat" %% "doobie-h2-cats",
-  "org.tpolecat" %% "doobie-postgres-cats"
-).map(_ % doobieVersion)
-
 //Java dependencies
-libraryDependencies += "com.h2database"     % "h2"            % "1.4.193"
-libraryDependencies += "org.apache.commons" % "commons-email" % "1.4"
+libraryDependencies ++= Seq(
+  "org.slf4j"          % "slf4j-nop"     % "1.6.4",
+  "com.h2database"     % "h2"            % "1.4.193",
+  "org.postgresql"     % "postgresql"    % "42.1.4",
+  "org.apache.commons" % "commons-email" % "1.4",
+  "org.flywaydb"       % "flyway-core"   % "4.2.0"
+)
 
-packAutoSettings
+lazy val generateSlickCode = taskKey[Unit]("Generates the schema classes for Slick DB Access")
+
+generateSlickCode := {
+  val runr = (runner in Compile).value
+  val cp   = (dependencyClasspath in Compile).value
+  val s    = streams.value
+  runr.run(
+    "slick.codegen.SourceCodeGenerator",
+    cp.files,
+    Array(
+      "slick.jdbc.PostgresProfile",
+      "org.postgresql.Driver",
+      "jdbc:postgresql://localhost/postgres",
+      "src/main/scala/",
+      "com.lambdaminute.wishr.model",
+      "postgres",
+      "pass"
+    ),
+    s.log
+  )
+}
