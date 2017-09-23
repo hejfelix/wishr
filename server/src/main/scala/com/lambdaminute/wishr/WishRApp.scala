@@ -31,7 +31,7 @@ case class WishRApp[F[_]](implicit F: Effect[F]) extends StreamApp[F] {
   override def stream(args: List[String], requestShutdown: F[Unit]): Stream[F, Nothing] =
     for {
       applicationConf <- Stream.eval(loadConfOrExit)
-      _               <- db.init(applicationConf.dbconf)
+      _               <- Stream.eval(db.init(applicationConf.dbconf))
       wishrService    <- Stream.eval(F.delay(WishRService[F](applicationConf)))
       server <- BlazeBuilder[F]
         .bindHttp()

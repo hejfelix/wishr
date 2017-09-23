@@ -6,13 +6,13 @@ CREATE TABLE users (
       secretURL          VARCHAR,
       registrationToken  VARCHAR,
       finalized          BOOLEAN
-)
+);
 
 CREATE TABLE secrets (
        email            VARCHAR UNIQUE REFERENCES users,
        secret           VARCHAR,
        expirationDate   TIMESTAMP
-)
+);
 
 CREATE TABLE wishes (
      email                    VARCHAR,
@@ -21,4 +21,4 @@ CREATE TABLE wishes (
      imageURL                 VARCHAR,
      index                    INTEGER,
      id                       SERIAL PRIMARY KEY
-)
+);
