@@ -1,7 +1,7 @@
 package com.lambdaminute.wishr.persistence
 
 import cats.data.EitherT
-import com.lambdaminute.wishr.model.tags.{RegistrationToken, SecretUrl, WishId}
+import com.lambdaminute.wishr.model.tags.{RegistrationToken, SecretUrl, SessionToken, WishId}
 import com.lambdaminute.wishr.model.{CreateUserRequest, Stats, WishEntry}
 import shapeless.tag.@@
 
@@ -9,13 +9,13 @@ trait Persistence[F[_], Error] {
 
   type PersistenceResponse[T] = EitherT[F, Error, T]
 
-  def logIn(user: String, hash: String): PersistenceResponse[String]
+  def logIn(email: String, password: String): PersistenceResponse[String @@ SessionToken]
 
   def getStats(): PersistenceResponse[Stats]
 
   def getRegistrationTokenFor(email: String): PersistenceResponse[String @@ RegistrationToken]
 
-  def getUserForSecretUrl(secret: String @@ SecretUrl): PersistenceResponse[String]
+  def getEmailForSecretUrl(secret: String @@ SecretUrl): PersistenceResponse[String]
 
   def getEntriesForSecret(secretURL: String @@ SecretUrl): PersistenceResponse[Seq[WishEntry]]
 
@@ -23,14 +23,14 @@ trait Persistence[F[_], Error] {
 
   def getEntriesFor(email: String): PersistenceResponse[Seq[WishEntry]]
 
-  def userForSecretURL(secret: String @@ SecretUrl): PersistenceResponse[String]
+  def emailForSecretURL(secret: String @@ SecretUrl): PersistenceResponse[String]
 
   def createWish(email: String,
                  heading: String,
                  descr: String,
                  imageUrl: Option[String]): PersistenceResponse[Int @@ WishId]
 
-  def finalize(registrationToken: String): PersistenceResponse[String]
+  def finalize(registrationToken: String @@ RegistrationToken): PersistenceResponse[String]
 
   def createUser(firstName: String,
                  lastName: String,

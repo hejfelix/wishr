@@ -9,7 +9,7 @@ CREATE TABLE users (
 );
 
 CREATE TABLE secrets (
-       email            VARCHAR UNIQUE REFERENCES users,
+       email            VARCHAR NOT NULL UNIQUE REFERENCES users,
        secret           VARCHAR NOT NULL,
        expirationDate   TIMESTAMP NOT NULL
 );

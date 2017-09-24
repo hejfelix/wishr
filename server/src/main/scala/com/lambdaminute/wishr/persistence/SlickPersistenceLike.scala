@@ -1,14 +1,19 @@
 package com.lambdaminute.wishr.persistence
 
+import java.time.Instant
+import java.time.temporal.ChronoUnit
+
 import cats.data.EitherT
 import com.lambdaminute.wishr.model._
-import com.lambdaminute.wishr.model.tags.{RegistrationToken, SecretUrl, WishId}
-import shapeless.tag.@@
+import com.lambdaminute.wishr.model.tags.{RegistrationToken, SecretUrl, SessionToken, WishId}
 import shapeless.tag
+import shapeless.tag.@@
+import cats.implicits._
+import cats._
+import com.lambdaminute.wishr.auth.Encryption
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.implicitConversions
-import com.github.t3hnar.bcrypt._
 
 trait SlickPersistenceLike extends Persistence[Future, ServiceError] with Tables {
 
@@ -16,7 +21,62 @@ trait SlickPersistenceLike extends Persistence[Future, ServiceError] with Tables
   val db: Database
   implicit val ec: ExecutionContext
 
-  override def logIn(user: String, hash: String) = ???
+  def encryption: Encryption
+
+  override def logIn(email: String,
+                     password: String): EitherT[Future, ServiceError, String @@ SessionToken] = {
+    val eventualMaybeHash =
+      db.run(Users.filter(_.email === email).map(_.hashedpassword).result.headOption)
+
+    val verifiedHash = EitherT(eventualMaybeHash.map {
+      case Some(hash) if encryption.isHashedAs(password, hash) =>
+        Right(hash)
+      case _ =>
+        Left(MissingValueError(s"No user found for hash: ${encryption.hash(password)}"))
+    })
+
+    for {
+      _            <- verifiedHash
+      sessionToken <- EitherT(getOrCreateSessionToken(email))
+    } yield sessionToken
+
+  }
+
+  private def getOrCreateSessionToken(
+      email: String): Future[Either[ServiceError, String @@ SessionToken]] = {
+    val expTime     = Instant.now().plus(15, ChronoUnit.MINUTES)
+    val stamp       = java.sql.Timestamp.from(expTime)
+    val thisSecret  = Secrets.filter(_.email === email)
+    val maybeSecret = thisSecret.result.headOption
+
+    val newOrUpdatedSecret = maybeSecret
+      .flatMap {
+        case Some(_) =>
+          thisSecret
+            .map(_.expirationdate)
+            .update(stamp)
+        case None =>
+          Secrets += SecretsRow(email, encryption.newToken, stamp)
+      }
+      .map {
+        case 0 => Left(DatabaseError(new Exception(s"Failed to update session token for $email")))
+        case n => Right(n)
+      }
+
+    val token =
+      newOrUpdatedSecret.flatMap {
+        case Right(_) =>
+          thisSecret.map(_.secret).result.head.map(Right.apply)
+        case Left(err) => DBIO.successful(Left(err))
+      }
+
+    val query = token.map(_.map(tag[SessionToken][String]))
+
+    db.run(query)
+      .recover {
+        case t => Left(DatabaseError(t))
+      }
+  }
 
   implicit def futureEitherToEitherT[L, R](f: Future[Either[L, R]]): EitherT[Future, L, R] =
     EitherT(f)
@@ -29,10 +89,10 @@ trait SlickPersistenceLike extends Persistence[Future, ServiceError] with Tables
   }
 
   implicit class RecoverToMissingOrDbError[T](f: Future[Option[T]]) {
-    def orMissingValue(name: String): Future[Either[ServiceError, T]] =
+    def orMissingValue(name: String, value: String): Future[Either[ServiceError, T]] =
       f.map {
           case Some(value) => Right(value)
-          case None        => Left(MissingValueError(s"No value found for '$name'"))
+          case None        => Left(MissingValueError(s"No value found for $name: $value"))
         }
         .recover {
           case t => Left(DatabaseError(t))
@@ -48,9 +108,6 @@ trait SlickPersistenceLike extends Persistence[Future, ServiceError] with Tables
     db.run(query).orError
   }
 
-  def encrypt(str: String): String          = str.bcrypt
-  def isHashedAs(str: String, hash: String) = str isBcrypted hash
-
   override def getRegistrationTokenFor(
       email: String): PersistenceResponse[String @@ RegistrationToken] =
     db.run(
@@ -58,12 +115,20 @@ trait SlickPersistenceLike extends Persistence[Future, ServiceError] with Tables
           .filter(_.email === email)
           .map(_.registrationtoken)
           .result
-          .head
+          .headOption
       )
-      .map(tag[RegistrationToken][String])
-      .orError
+      .map(_.map(tag[RegistrationToken][String]))
+      .orMissingValue("email", email)
 
-  override def getUserForSecretUrl(secret: String @@ SecretUrl) = ???
+  override def getEmailForSecretUrl(
+      secret: String @@ SecretUrl): EitherT[Future, ServiceError, String] =
+    db.run(
+        Users
+          .filter(_.secreturl === (secret: String))
+          .map(_.email)
+          .result
+          .headOption)
+      .orMissingValue("secret", secret)
 
   def wishRowsToEntries(wishes: Seq[WishesRow]): Seq[WishEntry] = wishes.map(wishRowToEntry)
   def wishRowToEntry(row: WishesRow): WishEntry =
@@ -84,11 +149,19 @@ trait SlickPersistenceLike extends Persistence[Future, ServiceError] with Tables
         Users.filter(_.email === email).map(_.secreturl).result.headOption
       )
       .map(_.map(tag[SecretUrl][String]))
-      .orMissingValue("email")
+      .orMissingValue("email", email)
 
-  override def getEntriesFor(user: String) = ???
+  override def getEntriesFor(email: String) = {
+    val query = (for {
+      (_, wish) <- Users.filter(_.email === email) joinRight Wishes
+    } yield wish).result.map(wishRowsToEntries)
+    db.run(query).orError
+  }
 
-  override def userForSecretURL(secret: String @@ SecretUrl) = ???
+  override def emailForSecretURL(
+      secret: String @@ SecretUrl): EitherT[Future, ServiceError, String] =
+    db.run(Users.filter(_.secreturl === (secret: String)).map(_.email).result.headOption)
+      .orMissingValue("secret", secret)
 
   override def createWish(email: String,
                           heading: String,
@@ -106,7 +179,18 @@ trait SlickPersistenceLike extends Persistence[Future, ServiceError] with Tables
       .orError
   }
 
-  override def finalize(registrationToken: String) = ???
+  override def finalize(
+      registrationToken: String @@ RegistrationToken): EitherT[Future, ServiceError, String] = {
+    val query = (for {
+      user <- Users.filter(_.registrationtoken === (registrationToken: String))
+    } yield user.finalized).update(true)
+    db.run(query)
+      .map {
+        case 0 => None
+        case _ => Some(registrationToken)
+      }
+      .orMissingValue("registrationToken", registrationToken)
+  }
 
   override def createUser(firstName: String,
                           lastName: String,
@@ -118,7 +202,7 @@ trait SlickPersistenceLike extends Persistence[Future, ServiceError] with Tables
         Users += UsersRow(firstName,
                           lastName,
                           email,
-                          encrypt(password),
+                          encryption.hash(password),
                           secretUrl: String,
                           registrationToken: String,
                           false))

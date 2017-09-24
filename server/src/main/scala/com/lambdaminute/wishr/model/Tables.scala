@@ -20,30 +20,30 @@ trait Tables {
   def ddl = schema
 
   /** Entity class storing rows of table Secrets
-   *  @param email Database column email SqlType(varchar), Default(None)
+   *  @param email Database column email SqlType(varchar)
    *  @param secret Database column secret SqlType(varchar)
    *  @param expirationdate Database column expirationdate SqlType(timestamp) */
-  case class SecretsRow(email: Option[String] = None, secret: String, expirationdate: java.sql.Timestamp)
+  case class SecretsRow(email: String, secret: String, expirationdate: java.sql.Timestamp)
   /** GetResult implicit for fetching SecretsRow objects using plain SQL queries */
-  implicit def GetResultSecretsRow(implicit e0: GR[Option[String]], e1: GR[String], e2: GR[java.sql.Timestamp]): GR[SecretsRow] = GR{
+  implicit def GetResultSecretsRow(implicit e0: GR[String], e1: GR[java.sql.Timestamp]): GR[SecretsRow] = GR{
     prs => import prs._
-    SecretsRow.tupled((<<?[String], <<[String], <<[java.sql.Timestamp]))
+    SecretsRow.tupled((<<[String], <<[String], <<[java.sql.Timestamp]))
   }
   /** Table description of table secrets. Objects of this class serve as prototypes for rows in queries. */
   class Secrets(_tableTag: Tag) extends profile.api.Table[SecretsRow](_tableTag, "secrets") {
     def * = (email, secret, expirationdate) <> (SecretsRow.tupled, SecretsRow.unapply)
     /** Maps whole row to an option. Useful for outer joins. */
-    def ? = (email, Rep.Some(secret), Rep.Some(expirationdate)).shaped.<>({r=>import r._; _2.map(_=> SecretsRow.tupled((_1, _2.get, _3.get)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
+    def ? = (Rep.Some(email), Rep.Some(secret), Rep.Some(expirationdate)).shaped.<>({r=>import r._; _1.map(_=> SecretsRow.tupled((_1.get, _2.get, _3.get)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
 
-    /** Database column email SqlType(varchar), Default(None) */
-    val email: Rep[Option[String]] = column[Option[String]]("email", O.Default(None))
+    /** Database column email SqlType(varchar) */
+    val email: Rep[String] = column[String]("email")
     /** Database column secret SqlType(varchar) */
     val secret: Rep[String] = column[String]("secret")
     /** Database column expirationdate SqlType(timestamp) */
     val expirationdate: Rep[java.sql.Timestamp] = column[java.sql.Timestamp]("expirationdate")
 
     /** Foreign key referencing Users (database name secrets_email_fkey) */
-    lazy val usersFk = foreignKey("secrets_email_fkey", email, Users)(r => Rep.Some(r.email), onUpdate=ForeignKeyAction.NoAction, onDelete=ForeignKeyAction.NoAction)
+    lazy val usersFk = foreignKey("secrets_email_fkey", email, Users)(r => r.email, onUpdate=ForeignKeyAction.NoAction, onDelete=ForeignKeyAction.NoAction)
 
     /** Uniqueness Index over (email) (database name secrets_email_key) */
     val index1 = index("secrets_email_key", email, unique=true)
