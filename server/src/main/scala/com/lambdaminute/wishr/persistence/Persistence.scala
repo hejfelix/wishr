@@ -1,11 +1,11 @@
 package com.lambdaminute.wishr.persistence
 
 import cats.data.EitherT
-import com.lambdaminute.wishr.model.tags.WishId
+import com.lambdaminute.wishr.model.tags.{RegistrationToken, SecretUrl, WishId}
 import com.lambdaminute.wishr.model.{CreateUserRequest, Stats, WishEntry}
 import shapeless.tag.@@
 
-trait Persistence[F[_], Error, Secret] {
+trait Persistence[F[_], Error] {
 
   type PersistenceResponse[T] = EitherT[F, Error, T]
 
@@ -13,17 +13,17 @@ trait Persistence[F[_], Error, Secret] {
 
   def getStats(): PersistenceResponse[Stats]
 
-  def getSecretFor(user: String): PersistenceResponse[Secret]
+  def getRegistrationTokenFor(email: String): PersistenceResponse[String @@ RegistrationToken]
 
-  def getUserFor(secret: String): PersistenceResponse[String]
+  def getUserForSecretUrl(secret: String @@ SecretUrl): PersistenceResponse[String]
 
-  def emailForSecretURL(secretURL: String): PersistenceResponse[String]
+  def getEntriesForSecret(secretURL: String @@ SecretUrl): PersistenceResponse[Seq[WishEntry]]
 
-  def getSharingURL(email: String): PersistenceResponse[String]
+  def getSecretUrl(email: String): PersistenceResponse[String @@ SecretUrl]
 
-  def getEntriesFor(user: String): PersistenceResponse[List[WishEntry]]
+  def getEntriesFor(email: String): PersistenceResponse[Seq[WishEntry]]
 
-  def userForSecretURL(secret: String): PersistenceResponse[String]
+  def userForSecretURL(secret: String @@ SecretUrl): PersistenceResponse[String]
 
   def createWish(email: String,
                  heading: String,
@@ -36,7 +36,8 @@ trait Persistence[F[_], Error, Secret] {
                  lastName: String,
                  email: String,
                  password: String,
-                 activationToken: String): PersistenceResponse[Int]
+                 secretUrl: String @@ SecretUrl,
+                 registrationToken: String @@ RegistrationToken): PersistenceResponse[Int]
 
   def grant(wishId: Int @@ WishId): PersistenceResponse[Int]
 }

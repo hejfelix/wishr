@@ -3,7 +3,7 @@ package com.lambdaminute.wishr
 import com.lambdaminute.wishr.persistence.Persistence
 import io.circe.Printer
 
-class WishRAuthentication[F[_]](persistence: Persistence[F,String, String])  {
+class WishRAuthentication[F[_]](persistence: Persistence[F,String])  {
 
 
 //  implicit def eitherEncoder[T: Encoder, U: Encoder]: EntityEncoder[Either[T, U]] =

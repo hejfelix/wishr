@@ -11,7 +11,7 @@ import com.lambdaminute.wishr.model.{CreateUserRequest, Stats, WishEntry}
 
 import cats.data.EitherT
 
-abstract class PostgreSQLPersistence[F[_]](dbconf: DBConfig) extends Persistence[F, String, String] {
+abstract class PostgreSQLPersistence[F[_]](dbconf: DBConfig) extends Persistence[F, String] {
 
 //  val xa = DriverManagerTransactor[F](
 //    "org.postgresql.Driver",
