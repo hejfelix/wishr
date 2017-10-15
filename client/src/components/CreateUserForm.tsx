@@ -4,6 +4,10 @@ import { connect } from "react-redux";
 
 import Button from "material-ui/Button";
 import TextField from "material-ui/TextField";
+import { doCreateUser } from "../actions";
+import { StoreState } from "../store";
+import { CircularProgress } from "material-ui/Progress";
+import { paths } from "../routes";
 
 export interface UserForm {
     firstName: string;
@@ -25,11 +29,17 @@ export const userFormInitialState: UserForm = {
 
 interface Props {
     handleSubmit: (e: any) => any;
+    isLoading: boolean;
 }
 
-export const ModelName = "userForm";
+const ModelName = "userForm";
 
-const ContactFormSFC: React.SFC<Props> = ({ handleSubmit }) => {
+const ContactFormSFC: React.SFC<Props> = ({ handleSubmit, isLoading }) => {
+    console.log(isLoading);
+    if (isLoading) {
+        return <CircularProgress />;
+    }
+
     return (
         <div>
             <h1> Create User </h1>
@@ -78,13 +88,12 @@ const ContactFormSFC: React.SFC<Props> = ({ handleSubmit }) => {
     );
 };
 
-const logValues = (form: UserForm) => (dispatch: any) => {
-    console.log("logging: %O", form);
-};
-
-const mapStateToProps = (state: any) => ({});
+const mapStateToProps = (state: { storeState: StoreState }) => ({
+    isLoading: state.storeState.modalProgress
+});
 const mapDispatchToProps = (dispatch: any) => ({
-    handleSubmit: (form: UserForm) => dispatch(logValues(form))
+    handleSubmit: (form: UserForm) =>
+        dispatch(doCreateUser(paths.index)({ form: form }))
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(ContactFormSFC);

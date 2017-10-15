@@ -12,7 +12,7 @@ interface Props {
     navigate: (path: PathType) => void;
 }
 
-export const ModelName = "loginForm";
+const ModelName = "loginForm";
 
 export interface LoginForm {
     userName: string;
