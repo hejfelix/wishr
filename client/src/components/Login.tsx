@@ -5,11 +5,11 @@ import Button from "material-ui/Button";
 import TextField from "material-ui/TextField";
 import { Form, Control } from "react-redux-form";
 import { push } from "react-router-redux";
-import Path from "../routes";
+import { PathType, paths } from "../routes";
 
 interface Props {
     handleSubmit: (e: any) => any;
-    navigate: (path: Path) => void;
+    navigate: (path: PathType) => void;
 }
 
 export const ModelName = "loginForm";
@@ -43,10 +43,14 @@ const Login: React.SFC<Props> = ({ handleSubmit, navigate }) => {
                     />
                 </div>
                 <Button type="submit"> Log in </Button>
+                or
+                <Button
+                    onClick={(_: React.MouseEvent<any>) =>
+                        navigate(paths.createUser)}
+                >
+                    Create User
+                </Button>
             </Form>
-            <Button onClick={(e: any) => navigate("createUser")}>
-                Create User
-            </Button>
         </div>
     );
 };
@@ -58,7 +62,7 @@ const logValues = (form: LoginForm) => (dispatch: any) => {
 const mapStateToProps = (state: any) => ({});
 const mapDispatchToProps = (dispatch: any) => ({
     handleSubmit: (form: LoginForm) => dispatch(logValues(form)),
-    navigate: (path: Path) => dispatch(push(path))
+    navigate: (path: PathType) => dispatch(push(path))
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(Login);
