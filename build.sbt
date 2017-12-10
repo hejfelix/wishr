@@ -1,29 +1,35 @@
 lazy val commonSettings = Seq(
   organization := "com.lambdaminute",
-  version := "0.0.1-SNAPSHOT"
+  version := "0.0.1-SNAPSHOT",
+  scalaVersion := Versions.scalaVersion
 )
 
-scalaVersion in ThisBuild := "2.12.3"
+scalaVersion in ThisBuild := Versions.scalaVersion
 
 lazy val modelJVM = model.jvm
-lazy val modelJS = model.js
+lazy val modelJS  = model.js
+
+lazy val codegen = (project in file("codegen"))
+  .settings(
+    libraryDependencies +=
+      "com.typesafe.slick" %% "slick-codegen" % "3.2.1")
 
 lazy val server = (project in file("server"))
   .settings(
     commonSettings
   )
-  .dependsOn(modelJVM)
+  .dependsOn(modelJVM, codegen)
 
 lazy val model =
-  (crossProject.crossType(CrossType.Pure) in file("model")).settings(
-    commonSettings,
-    scalaVersion := Versions.scalaVersion
-  )
+  (crossProject in file("model"))
+    .jvmSettings(
+      commonSettings
+    )
+    .jsSettings(commonSettings)
 
 lazy val client = (project in file("client"))
   .settings(
-    commonSettings,
-    scalaVersion := Versions.scalaVersion
+    commonSettings
   )
   .enablePlugins(ScalaJSPlugin)
   .dependsOn(modelJS)

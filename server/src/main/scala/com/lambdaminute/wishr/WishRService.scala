@@ -1,9 +1,30 @@
 package com.lambdaminute
 
+import scala.concurrent.Future
+
 import cats.effect.Effect
 import com.lambdaminute.wishr.config.ApplicationConf
 import org.http4s.HttpService
 import org.http4s.dsl.Http4sDsl
+import autowire._
+import io.circe.{Decoder, Encoder}
+import io.circe.parser.decode
+import io.circe.generic.JsonCodec, io.circe.syntax._
+import com.lambdaminute.wishr.model.Api
+
+object MyApiImpl  {
+   def add(x: Int, y: Int): Future[Int] = Future.successful(x + y)
+}
+object MyServer extends autowire.Server[String, Decoder, Encoder] {
+
+  def read[Result](p: String)(implicit evidence$1: Decoder[Result]): Result =
+    decode[Result](p).right.get
+
+  def write[Result](r: Result)(implicit evidence$2: Encoder[Result]): String =
+    r.asJson.spaces2
+
+//  val routes = MyServer.route[Api](MyApiImpl)
+}
 
 case class WishRService[F[_]](applicationConf: ApplicationConf)(implicit F: Effect[F])
     extends Http4sDsl[F] {
@@ -11,9 +32,9 @@ case class WishRService[F[_]](applicationConf: ApplicationConf)(implicit F: Effe
   def service: HttpService[F] = HttpService[F] {
     case GET -> Root / "hello" / name =>
       Ok(s"Hello, $name!")
+    case request @ (POST -> Root / "add") =>
+      ???
   }
-
-
 
   //  def serveFile(path: String, request: Request): Task[Response] =
   //    StaticFile
@@ -182,4 +203,5 @@ case class WishRService[F[_]](applicationConf: ApplicationConf)(implicit F: Effe
   //      case Left(err) => InternalServerError(err)
   //    }
   //  }
+
 }
