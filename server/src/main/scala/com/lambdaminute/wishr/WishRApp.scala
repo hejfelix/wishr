@@ -38,11 +38,11 @@ class WishRApp[F[_]](implicit F: Effect[F]) extends StreamApp[F] {
   override def stream(args: List[String], requestShutdown: F[Unit]): Stream[F, ExitCode] =
     for {
       applicationConf <- Stream.eval(loadConfOrExit)
-      numMigrations   <- Stream.eval(db.init(applicationConf.dbconf))
-     _ = println(numMigrations)
-      wishrService    <- Stream.eval(F.delay(WishRService[F](applicationConf)))
+//      numMigrations   <- Stream.eval(db.init(applicationConf.dbconf))
+//     _ = println(numMigrations)
+      wishrService <- Stream.eval(F.delay(WishRService[F](applicationConf)))
       result <- BlazeBuilder[F]
-        .bindHttp()
+        .bindHttp(port = 9000)
         .mountService(CORS(wishrService.service))
         .serve
     } yield result

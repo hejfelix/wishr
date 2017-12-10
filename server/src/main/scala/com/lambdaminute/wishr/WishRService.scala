@@ -1,19 +1,21 @@
 package com.lambdaminute
 
-import scala.concurrent.Future
+import java.io.File
 
 import cats.effect.Effect
 import com.lambdaminute.wishr.config.ApplicationConf
-import org.http4s.HttpService
-import org.http4s.dsl.Http4sDsl
-import autowire._
-import io.circe.{Decoder, Encoder}
-import io.circe.parser.decode
-import io.circe.generic.JsonCodec, io.circe.syntax._
 import com.lambdaminute.wishr.model.Api
+import io.circe.parser.decode
+import io.circe.syntax._
+import io.circe.{Decoder, Encoder}
+import org.http4s.dsl.Http4sDsl
+import org.http4s.headers.`Content-Type`
+import org.http4s.{HttpService, MediaType, Request, StaticFile}
 
-object MyApiImpl  {
-   def add(x: Int, y: Int): Future[Int] = Future.successful(x + y)
+import concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+object MyApiImpl extends Api {
+  def add(x: Int, y: Int): Future[Int] = Future.successful(x + y)
 }
 object MyServer extends autowire.Server[String, Decoder, Encoder] {
 
@@ -23,15 +25,43 @@ object MyServer extends autowire.Server[String, Decoder, Encoder] {
   def write[Result](r: Result)(implicit evidence$2: Encoder[Result]): String =
     r.asJson.spaces2
 
-//  val routes = MyServer.route[Api](MyApiImpl)
+  val routes = MyServer.route[Api](MyApiImpl)
+}
+
+object Template {
+  import scalatags.Text.all._
+  import scalatags.Text.tags2.title
+
+  val txt =
+    "<!DOCTYPE html>" +
+      html(
+        head(
+          title("Example Scala.js application"),
+          meta(httpEquiv := "Content-Type", content := "text/html; charset=UTF-8"),
+          script(`type` := "text/javascript", src := "/client-fastopt.js"),
+          script(`type` := "text/javascript", src := "http://localhost:12345/workbench.js")
+        ),
+        body(margin := 0)(
+          script("Main.main")
+        )
+      )
 }
 
 case class WishRService[F[_]](applicationConf: ApplicationConf)(implicit F: Effect[F])
     extends Http4sDsl[F] {
 
+  def static(file: String, request: Request[F]) =
+    StaticFile.fromResource("/" + file, Some(request))
+
   def service: HttpService[F] = HttpService[F] {
+    case GET -> Root =>
+      Ok(Template.txt).withContentType(`Content-Type`(new MediaType("text", "html")))
     case GET -> Root / "hello" / name =>
       Ok(s"Hello, $name!")
+    case POST -> Root / "notifications" =>
+      Ok("{}")
+    case request @ GET -> path =>
+      static(path.toList.mkString("/"), request).getOrElseF(NotFound())
     case request @ (POST -> Root / "add") =>
       ???
   }
