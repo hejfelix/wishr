@@ -7,16 +7,15 @@ import com.lambdaminute.wishr.config.ApplicationConf
 import com.lambdaminute.wishr.model.Api
 import io.circe.parser.decode
 import io.circe.syntax._
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, Encoder, Json}
 import org.http4s.dsl.Http4sDsl
 import org.http4s.headers.`Content-Type`
 import org.http4s.{HttpService, MediaType, Request, StaticFile}
-
+import org.http4s.circe._
+import concurrent.duration._
 import concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-object MyApiImpl extends Api {
-  def add(x: Int, y: Int): Future[Int] = Future.successful(x + y)
-}
+import scala.concurrent.{Await, Future}
+
 object MyServer extends autowire.Server[String, Decoder, Encoder] {
 
   def read[Result](p: String)(implicit evidence$1: Decoder[Result]): Result =
@@ -25,7 +24,6 @@ object MyServer extends autowire.Server[String, Decoder, Encoder] {
   def write[Result](r: Result)(implicit evidence$2: Encoder[Result]): String =
     r.asJson.spaces2
 
-  val routes = MyServer.route[Api](MyApiImpl)
 }
 
 object Template {
@@ -48,7 +46,8 @@ object Template {
 }
 
 case class WishRService[F[_]](applicationConf: ApplicationConf)(implicit F: Effect[F])
-    extends Http4sDsl[F] {
+    extends Http4sDsl[F]
+    with Api {
 
   def static(file: String, request: Request[F]) =
     StaticFile.fromResource("/" + file, Some(request))
@@ -56,6 +55,13 @@ case class WishRService[F[_]](applicationConf: ApplicationConf)(implicit F: Effe
   def service: HttpService[F] = HttpService[F] {
     case GET -> Root =>
       Ok(Template.txt).withContentType(`Content-Type`(new MediaType("text", "html")))
+    case request @ POST -> "api" /: path =>
+      F.flatMap(request.as[Json])(json => {
+        val map = json.asObject.map(_.toMap.mapValues(_.spaces2)).get
+        Ok(Await.result(MyServer.route[Api](this)(
+          autowire.Core.Request(path.toList, map)
+        ),10.seconds))
+      })
     case GET -> Root / "hello" / name =>
       Ok(s"Hello, $name!")
     case POST -> Root / "notifications" =>
@@ -233,5 +239,5 @@ case class WishRService[F[_]](applicationConf: ApplicationConf)(implicit F: Effe
   //      case Left(err) => InternalServerError(err)
   //    }
   //  }
-
+  override def add(x: Int, y: Int): Future[Int] = Future.successful(x + y)
 }

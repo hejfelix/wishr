@@ -7,6 +7,5 @@ libraryDependencies ++= Seq(
 
 libraryDependencies += "org.scala-js" %%% "scalajs-dom" % "0.9.2"
 
-
-
-//workbenchDefaultRootObject := Some(("client/target/scala-2.12/classes/index-dev.html", "client/target/scala-2.12/"))
+workbenchDefaultRootObject := Some(
+  ("client/target/scala-2.12/classes/index-dev.html", "client/target/scala-2.12/"))
