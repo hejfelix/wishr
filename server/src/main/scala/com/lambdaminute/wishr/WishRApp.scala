@@ -12,9 +12,15 @@ import fs2.StreamApp.ExitCode
 
 class WishRApp[F[_]](implicit F: Effect[F]) extends StreamApp[F] {
 
-  private def parseDbUrl(url: String): DBConfig = ???
+  private def parseDbUrl(url: String): DBConfig = {
+    val driver   = url.takeWhile(_ != ':').mkString
+    val user     = url.split("//").drop(1).head.takeWhile(_ != ':').mkString
+    val password = url.split(":").drop(2).head.takeWhile(_ != '@').mkString
+    DBConfig(user, password, url, driver)
+  }
 
-  def loadDbConf: Either[ConfigErrors, DBConfig] = loadConfig(env[String]("DB_URL"))(parseDbUrl)
+  def loadDbConf: Either[ConfigErrors, DBConfig] =
+    loadConfig(env[String]("DB_URL"))(parseDbUrl)
 
   def loadAppConf: Either[ConfigErrors, ApplicationConf] =
     for {
@@ -25,19 +31,20 @@ class WishRApp[F[_]](implicit F: Effect[F]) extends StreamApp[F] {
     F.delay(loadAppConf match {
       case Right(appConf) => appConf
       case Left(errs) =>
-        sys.error("Failed to load configuration:\n" + errs.messages.mkString("\n"))
+        sys.error(s"""Failed to load configuration:${errs.messages.mkString("\n")}""".stripMargin)
         sys.exit(1)
     })
 
   override def stream(args: List[String], requestShutdown: F[Unit]): Stream[F, ExitCode] =
     for {
       applicationConf <- Stream.eval(loadConfOrExit)
-      _               <- Stream.eval(db.init(applicationConf.dbconf))
+      numMigrations   <- Stream.eval(db.init(applicationConf.dbconf))
+     _ = println(numMigrations)
       wishrService    <- Stream.eval(F.delay(WishRService[F](applicationConf)))
-      server <- BlazeBuilder[F]
+      result <- BlazeBuilder[F]
         .bindHttp()
         .mountService(CORS(wishrService.service))
         .serve
-    } yield server
+    } yield result
 
 }

@@ -1,14 +1,19 @@
 package com.lambdaminute
 
+import cats.effect.Effect
 import com.lambdaminute.wishr.config.ApplicationConf
 import org.http4s.HttpService
+import org.http4s.dsl.Http4sDsl
+
+case class WishRService[F[_]](applicationConf: ApplicationConf)(implicit F: Effect[F])
+    extends Http4sDsl[F] {
+
+  def service: HttpService[F] = HttpService[F] {
+    case GET -> Root / "hello" / name =>
+      Ok(s"Hello, $name!")
+  }
 
 
-case class WishRService[F[_]](applicationConf: ApplicationConf) {
-
-
-
-  def service: HttpService[F] = ???
 
   //  def serveFile(path: String, request: Request): Task[Response] =
   //    StaticFile
