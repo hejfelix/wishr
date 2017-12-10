@@ -1,0 +1,10 @@
+PostgreSQL:
+  restart: always
+  image: sameersbn/postgresql:9.6-1
+  ports:
+    - "5432:5432"
+  environment:
+    - DEBUG=false
+    - DB_USER=sa
+    - DB_PASS=password
+    - DB_NAME=test

@@ -34,6 +34,7 @@ object FlywayCodeGen {
     val prefixedCodegen =
       codegen.map(generator => {
         val str = generator.packageCode(profileName, packageName, "Tables", None)
+        println(str)
         generator.writeStringToFile(s"//scalastyle:off\n$str", genPath, packageName, "Tables.scala")
       })
 

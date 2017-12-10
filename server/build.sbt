@@ -1,7 +1,3 @@
-val commonSettings = (
-  scalaVersion := "2.12.3"
-)
-
 resolvers += Resolver.sonatypeRepo("snapshots")
 
 val http4sVersion = "0.18.0-M6"
@@ -13,13 +9,11 @@ val cirisVersion = "0.4.1"
 scalacOptions ++= Seq("-feature", "-language:higherKinds", "-deprecation")
 
 lazy val codegen = project
-  .settings(commonSettings)
   .settings(
     libraryDependencies +=
       "com.typesafe.slick" %% "slick-codegen" % slickVersion)
 
 lazy val server = (project in file("."))
-  .settings(commonSettings)
   .settings(
     libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % Test
   )
@@ -61,8 +55,8 @@ generateSlickCode := {
       "jdbc:postgresql://localhost/postgres",
       "src/main/scala/",
       "com.lambdaminute.wishr.model",
-      "postgres",
-      "pass"
+      "sa",
+      "password"
     ),
     s.log
   )
