@@ -7,9 +7,10 @@ import com.lambdaminute.wishr.config.{ApplicationConf, DBConfig}
 import fs2._
 import org.http4s.server.blaze.BlazeBuilder
 import org.http4s.server.middleware.CORS
-import org.http4s.util.StreamApp
+import fs2.StreamApp
+import fs2.StreamApp.ExitCode
 
-case class WishRApp[F[_]](implicit F: Effect[F]) extends StreamApp[F] {
+class WishRApp[F[_]](implicit F: Effect[F]) extends StreamApp[F] {
 
   private def parseDbUrl(url: String): DBConfig = ???
 
@@ -28,7 +29,7 @@ case class WishRApp[F[_]](implicit F: Effect[F]) extends StreamApp[F] {
         sys.exit(1)
     })
 
-  override def stream(args: List[String], requestShutdown: F[Unit]): Stream[F, Nothing] =
+  override def stream(args: List[String], requestShutdown: F[Unit]): Stream[F, ExitCode] =
     for {
       applicationConf <- Stream.eval(loadConfOrExit)
       _               <- Stream.eval(db.init(applicationConf.dbconf))

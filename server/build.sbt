@@ -4,13 +4,13 @@ val commonSettings = (
 
 resolvers += Resolver.sonatypeRepo("snapshots")
 
-val http4sVersion = "0.18.0-SNAPSHOT"
+val http4sVersion = "0.18.0-M6"
 
 val circeVersion = "0.7.0"
 val slickVersion = "3.2.1"
 val cirisVersion = "0.4.1"
 
-scalacOptions ++= Seq("-feature", "-language:higherKinds")
+scalacOptions ++= Seq("-feature", "-language:higherKinds", "-deprecation")
 
 lazy val codegen = project
   .settings(commonSettings)
@@ -18,7 +18,7 @@ lazy val codegen = project
     libraryDependencies +=
       "com.typesafe.slick" %% "slick-codegen" % slickVersion)
 
-lazy val root = (project in file("."))
+lazy val server = (project in file("."))
   .settings(commonSettings)
   .settings(
     libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.1" % Test
