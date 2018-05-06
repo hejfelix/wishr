@@ -136,9 +136,9 @@ case class PostgreSQLPersistence(dbconf: DBConfig) extends Persistence[String, S
     val insertOrUpdate =
       sql"""
     INSERT INTO secrets (email, secret, expirationDate)
-      VALUES ($email, $newSecret, CURRENT_TIMESTAMP + INTERVAL '15 minutes')
+      VALUES ($email, $newSecret, CURRENT_TIMESTAMP + INTERVAL '180 minutes')
     ON CONFLICT (email) DO UPDATE
-      SET expirationDate = CURRENT_TIMESTAMP + INTERVAL '15 minutes'
+      SET expirationDate = CURRENT_TIMESTAMP + INTERVAL '180 minutes'
          """.update.run
 
     val token: Task[(Int, String)] = ( for
