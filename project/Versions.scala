@@ -1,5 +1,5 @@
 object Versions {
 
-  val scalaVersion = "2.12.3"
+  val scalaVersion = "2.12.4"
 
 }

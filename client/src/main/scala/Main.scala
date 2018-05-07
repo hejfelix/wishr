@@ -22,13 +22,13 @@ object MyClient extends autowire.Client[String, Decoder, Encoder] {
       .map(_.responseText)
 }
 
-@JSExportTopLevel("Main")
 object Main {
 
   val root = "localhost:9000"
 
-  @JSExportTopLevel("main")
+  @JSExportTopLevel("entrypoint.main")
   def main(args: Array[String]): Unit = {
+    println("HERRO!")
     MyClient[Api].add(39, 3).call().foreach(println)
     Ajax
       .get(s"http://$root/hello/felix")
