@@ -9,6 +9,9 @@ import org.http4s.server.blaze.BlazeBuilder
 import org.http4s.server.middleware.CORS
 import fs2.StreamApp
 import fs2.StreamApp.ExitCode
+import cats.implicits._
+import com.lambdaminute.wishr.persistence.FakePersistence
+import concurrent.ExecutionContext.Implicits.global
 
 class WishRApp[F[_]](implicit F: Effect[F]) extends StreamApp[F] {
 
@@ -20,7 +23,9 @@ class WishRApp[F[_]](implicit F: Effect[F]) extends StreamApp[F] {
   }
 
   def loadDbConf: Either[ConfigErrors, DBConfig] =
-    loadConfig(env[String]("DB_URL"))(parseDbUrl)
+    Right(
+      loadConfig(env[String]("DB_URL"))(parseDbUrl)
+        .getOrElse(DBConfig("postgres", "password", "localhost:5432", "jdbc:postgresql")))
 
   def loadAppConf: Either[ConfigErrors, ApplicationConf] =
     for {
@@ -35,12 +40,13 @@ class WishRApp[F[_]](implicit F: Effect[F]) extends StreamApp[F] {
         sys.exit(1)
     })
 
+  println("Starting...")
   override def stream(args: List[String], requestShutdown: F[Unit]): Stream[F, ExitCode] =
     for {
       applicationConf <- Stream.eval(loadConfOrExit)
 //      numMigrations   <- Stream.eval(db.init(applicationConf.dbconf))
 //     _ = println(numMigrations)
-      wishrService <- Stream.eval(F.delay(WishRService[F](applicationConf)))
+      wishrService <- Stream.eval(F.delay(new WishRService[F](applicationConf, new FakePersistence[F]())))
       result <- BlazeBuilder[F]
         .bindHttp(port = 9000)
         .mountService(CORS(wishrService.service))

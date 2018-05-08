@@ -15,6 +15,14 @@ module.exports = {
         libraryTarget: "var"
     },
     devtool: "source-map",
+    devServer: {
+        proxy: [
+            {
+                context: ["/auth", "/api"],
+                target: "http://localhost:9000"
+            }
+        ]
+    },
     resolve: {
         alias: {
             "resources": path.resolve(__dirname, "../../../../src/main/resources")

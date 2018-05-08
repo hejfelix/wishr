@@ -1,20 +1,24 @@
 package com.lambdaminute
 
-import java.io.File
-
+import cats.data.{Kleisli, OptionT}
 import cats.effect.Effect
+import cats.implicits._
 import com.lambdaminute.wishr.config.ApplicationConf
-import com.lambdaminute.wishr.model.Api
+import com.lambdaminute.wishr.model.tags._
+import com.lambdaminute.wishr.model._
+import com.lambdaminute.wishr.persistence.Persistence
+import io.circe.generic.auto._
 import io.circe.parser.decode
 import io.circe.syntax._
-import io.circe.{Decoder, Encoder, Json}
+import io.circe._
 import org.http4s.dsl.Http4sDsl
-import org.http4s.headers.`Content-Type`
-import org.http4s.{HttpService, MediaType, Request, StaticFile}
+import org.http4s.headers._
+import org.http4s.server._
 import org.http4s.circe._
-import concurrent.duration._
-import concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Await, Future}
+import org.http4s.{AuthedService, HttpService, MediaType, Request, Response, StaticFile}
+
+import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 object MyServer extends autowire.Server[String, Decoder, Encoder] {
 
@@ -45,31 +49,78 @@ object Template {
       )
 }
 
-case class WishRService[F[_]](applicationConf: ApplicationConf)(implicit F: Effect[F])
+class WishRService[F[_]](applicationConf: ApplicationConf, persistence: Persistence[F, String])(
+    implicit F: Effect[F])
     extends Http4sDsl[F]
-    with Api {
+    with AuthedApi {
 
-  def static(file: String, request: Request[F]) =
-    StaticFile.fromResource("/" + file, Some(request))
+  def static(file: String, request: Request[F]): OptionT[F, Response[F]] =
+    StaticFile.fromResource(s"/$file", Some(request))
 
-  def service: HttpService[F] = HttpService[F] {
-    case GET -> Root =>
-      Ok(Template.txt).withContentType(`Content-Type`(new MediaType("text", "html")))
-    case request @ POST -> "api" /: path =>
-      F.flatMap(request.as[Json])(json => {
-        val map = json.asObject.map(_.toMap.mapValues(_.spaces2)).get
-        Ok(Await.result(MyServer.route[Api](this)(
-          autowire.Core.Request(path.toList, map)
-        ),10.seconds))
-      })
-    case GET -> Root / "hello" / name =>
-      Ok(s"Hello, $name!")
-    case POST -> Root / "notifications" =>
-      Ok("{}")
-    case request @ GET -> path =>
-      static(path.toList.mkString("/"), request).getOrElseF(NotFound())
-    case request @ (POST -> Root / "add") =>
-      ???
+  import org.log4s._
+  private val logger = getLogger("BLOOP")
+
+  private val loggingService: Kleisli[OptionT[F, ?], Request[F], Request[F]] = Kleisli {
+    case x =>
+      logger.debug(s"${x.method}: ${x.pathInfo}")
+      OptionT.pure[F](x)
+  }
+
+  implicit val decoder = jsonOf[F, LoginRequest]
+
+  def service(implicit ec: ExecutionContext): HttpService[F] =
+    loggingService andThen ({
+      HttpService[F] {
+        case GET -> Root =>
+          Ok(Template.txt).withContentType(`Content-Type`(new MediaType("text", "html")))
+        case request @ POST -> Root / "login" =>
+          for {
+            loginRequest <- request.as[LoginRequest]
+            result       <- Ok(loginRequest.email + ": " + loginRequest.password).addCookie(authcookieName,"SECRET")
+          } yield result
+        case request @ POST -> "api" /: path =>
+          F.flatMap(request.as[Json])(json => {
+            val map = json.asObject.map(_.toMap.mapValues(_.spaces2)).get
+            Ok(
+              Await.result(MyServer.route[AuthedApi](this)(
+                             autowire.Core.Request(path.toList, map)
+                           ),
+                           10.seconds))
+          })
+        case GET -> Root / "hello" / name =>
+          Ok(s"Hello, $name!")
+        case POST -> Root / "notifications" =>
+          Ok("{}")
+        case request @ (POST -> Root / "add") =>
+          ???
+      }
+    } <+> authMiddleWare(authedService) <+> HttpService[F]{
+      case request @ GET -> path =>
+        static(path.toList.mkString("/"), request).getOrElseF(NotFound())} )
+
+  lazy val retrieveUser: Kleisli[F, SessionToken, Either[String, User]] = Kleisli {
+    (token: SessionToken) =>
+      persistence.emailForSessionToken(token).map(email => User(email, token)).value
+  }
+
+  lazy val onFailure: AuthedService[String, F] = Kleisli(
+    req => OptionT.liftF(Forbidden(req.authInfo)))
+  lazy val authcookieName = "authcookie"
+
+  lazy val authUser: Kleisli[F, Request[F], Either[String, User]] = Kleisli { request =>
+    val maybeToken = for {
+      header <- Cookie.from(request.headers).toRight("Cookie parsing error")
+      token <- header.values.toList
+        .find(_.name == authcookieName)
+        .toRight(s"Couldn't find the authcookie with name: ${authcookieName}")
+    } yield token.content.asSessionToken
+    maybeToken.fold(err => F.pure(Left(err)), retrieveUser.run)
+  }
+
+  val authMiddleWare: AuthMiddleware[F, User] = AuthMiddleware(authUser, onFailure)
+
+  val authedService: AuthedService[User, F] = AuthedService {
+    case GET -> Root / "herro" as user => println("ERROOOOO"); Ok(s"Welcome, $user!")
   }
 
   //  def serveFile(path: String, request: Request): Task[Response] =
@@ -240,4 +291,16 @@ case class WishRService[F[_]](applicationConf: ApplicationConf)(implicit F: Effe
   //    }
   //  }
   override def add(x: Int, y: Int): Future[Int] = Future.successful(x + y)
+
+  override def getWishes(): Future[WishList] = Future.successful(
+    WishList("john.doe",
+             "password",
+             List(
+               Wish("heading", "desc", None)
+             ))
+  )
+
+  override def updateWish(wish: Wish): Future[Unit] = Future.successful(())
+
+  override def createWish(wish: Wish): Future[Unit] = Future.successful(())
 }

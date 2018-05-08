@@ -1,14 +1,19 @@
 import autowire._
-import com.lambdaminute.wishr.model.Api
+import com.lambdaminute.wishr.model.{AuthedApi, Wish}
+import com.lambdaminute.wishr.model.tags._
+import hello.world.App
 import io.circe.parser.decode
 import io.circe.syntax._
+import io.circe._
+import io.circe.generic.auto._
 import io.circe.{Decoder, Encoder}
+import org.scalajs.dom
 import org.scalajs.dom.ext.Ajax
+import slinky.web.ReactDOM
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.scalajs.js.annotation.{JSExport, JSExportTopLevel}
-import autowire._
+import scala.scalajs.js.annotation.JSExportTopLevel
 
 // client-side implementation, and call-site
 object MyClient extends autowire.Client[String, Decoder, Encoder] {
@@ -18,21 +23,29 @@ object MyClient extends autowire.Client[String, Decoder, Encoder] {
 
   override def doCall(req: Request): Future[String] =
     Ajax
-      .post("http://localhost:9000/api/" + req.path.mkString("/"), req.args.asJson.spaces2)
+      .post("/api/" + req.path.mkString("/"), req.args.asJson.spaces2)
       .map(_.responseText)
 }
 
 object Main {
 
-  val root = "localhost:9000"
-
   @JSExportTopLevel("entrypoint.main")
   def main(args: Array[String]): Unit = {
-    println("HERRO!")
-    MyClient[Api].add(39, 3).call().foreach(println)
-    Ajax
-      .get(s"http://$root/hello/felix")
-      .map(_.responseText + "DUDES")
-      .foreach(println)
+
+    MyClient[AuthedApi].add(39, 3).call().foreach(println)
+    MyClient[AuthedApi].getWishes().call().foreach(println)
+    MyClient[AuthedApi].updateWish(Wish("", "", None)).call().foreach(println)
+    MyClient[AuthedApi].createWish(Wish("", "", None)).call().foreach(println)
+
+    MyClient[AuthedApi].add(39, 3).call().foreach(println)
+
+    val container = Option(dom.document.getElementById("root")).getOrElse {
+      val elem = dom.document.createElement("div")
+      elem.id = "root"
+      dom.document.body.appendChild(elem)
+      elem
+    }
+
+    ReactDOM.render(App(), container)
   }
 }

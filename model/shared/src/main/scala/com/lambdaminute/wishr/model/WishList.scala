@@ -1,6 +1,8 @@
 package com.lambdaminute.wishr.model
 
-case class WishList(owner: String, password: String, wishes: List[Wish])
+import com.lambdaminute.wishr.model.tags.Email
+
+case class WishList(owner: Email, password: String, wishes: List[Wish])
 
 case class Wish(heading: String, desc: String, image: Option[String]) {
   def isEmpty = heading.isEmpty && desc.isEmpty && image.isEmpty

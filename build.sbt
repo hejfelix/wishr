@@ -1,23 +1,22 @@
 import sbt.Keys.libraryDependencies
+import Versions._
 
 lazy val commonSettings = Seq(
   organization := "com.lambdaminute",
   version := "0.0.1-SNAPSHOT",
-  scalaVersion := Versions.scalaVersion
+  scalaVersion := scalaV
 )
 
-scalaVersion in ThisBuild := Versions.scalaVersion
+addCommandAlias("startClient", ";project client;fastOptJS::startWebpackDevServer;~fastOptJS")
+addCommandAlias("startBackend", ";project server;~reStart")
+
+scalaVersion in ThisBuild := scalaV
 
 val autoWireVersion  = "0.2.6"
 val scalaTagsVersion = "0.6.7"
 
 lazy val modelJVM = model.jvm
 lazy val modelJS  = model.js
-
-lazy val codegen = (project in file("codegen"))
-  .settings(
-    libraryDependencies +=
-      "com.typesafe.slick" %% "slick-codegen" % "3.2.1")
 
 lazy val server = (project in file("server"))
   .settings(
@@ -29,9 +28,11 @@ lazy val server = (project in file("server"))
     (resources in Compile) += {
       (fastOptJS in (client, Compile)).value
       (artifactPath in (client, Compile, fastOptJS)).value
-    }
+    },
+    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.6"),
+    scalacOptions ++= Seq("-Ypartial-unification")
   )
-  .dependsOn(modelJVM, codegen)
+  .dependsOn(modelJVM)
 
 lazy val model =
   (crossProject in file("model"))
@@ -39,6 +40,14 @@ lazy val model =
       commonSettings
     )
     .jsSettings(commonSettings)
+    .settings(
+      libraryDependencies ++= Seq(
+        "com.chuusai" %%% "shapeless"    % Versions.shapelessVersion,
+        "io.circe"    %% "circe-core"    % circeVersion,
+        "io.circe"    %% "circe-generic" % circeVersion,
+        "io.circe"    %% "circe-parser"  % circeVersion,
+      )
+    )
 
 val circeVersion  = "0.9.0-M2"
 val slinkyVersion = "0.4.2"
