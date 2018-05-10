@@ -87,8 +87,11 @@ class DoobiePersistence[F[_]](dbconf: DBConfig, tokenTimeout: FiniteDuration)(
 //  println(s"Create wishes: $createWishesResult")
 //  val createGrantedTableResult: Int = createGrantedTable.run.transact(xa).unsafeRun()
 //  println(s"Create granted wishes: ${createGrantedTableResult}")
+//  println(s"Create granted wishes: ${createGrantedTableResult}")
+//  println(s"Create granted wishes: ${createGrantedTableResult}")
+//  println(s"Create granted wishes: ${createGrantedTableResult}")
 //
-  case class UserPass(firstName: String, hashedPassword: String)
+case class UserPass(firstName: String, hashedPassword: String)
 
   override def logIn(email: Email, password: WishrPassword): PersistenceResponse[SessionToken] = {
 
@@ -120,10 +123,12 @@ class DoobiePersistence[F[_]](dbconf: DBConfig, tokenTimeout: FiniteDuration)(
          SELECT  (
                  SELECT COUNT(*)
                  FROM   wishes
+           |     WHERE granted=false
                  ) AS numberOfWishes,
                  (
                  SELECT COUNT(*)
-                 FROM   granted
+                 FROM   wishes
+                 WHERE granted=true
                  ) AS numberOfGranted,
                  (
                  SELECT COUNT(*)
@@ -134,9 +139,6 @@ class DoobiePersistence[F[_]](dbconf: DBConfig, tokenTimeout: FiniteDuration)(
         .option
         .map(_.toRight("Table missing for stats"))
         .transact(xa))
-
-  implicit val mettimestamp: Meta[FiniteDuration] =
-    Meta[String].xmap(_=>1.second, finiteDurationToPostGresInterval)
 
   private def newSecret = java.util.UUID.randomUUID.toString
 
@@ -161,15 +163,6 @@ class DoobiePersistence[F[_]](dbconf: DBConfig, tokenTimeout: FiniteDuration)(
       case _          => Left(s"Unable to update and retrieve token for $email")
     })
   }
-
-//  override def getSecretFor(email: Email): PersistenceResponse[SessionToken] =
-//    EitherT(
-//      sql"SELECT secret FROM secrets WHERE email='$email' and CURRENT_TIMESTAMP < expirationDate"
-//        .query[String]
-//        .option
-//        .map(_.toRight("Token expired"))
-//        .transact(xa)
-//    ).map(_.asSessionToken)
 
   override def emailForSessionToken(secret: SessionToken): PersistenceResponse[Email] =
     EitherT(
@@ -207,10 +200,7 @@ class DoobiePersistence[F[_]](dbconf: DBConfig, tokenTimeout: FiniteDuration)(
         .map(_.left.map(_.getMessage))
         .transact(xa)
     )
-//
-//  private def entryToTuple(w: WishEntry): (String, String, String, String, Int) =
-//    (w.email, w.heading, w.desc, w.image, w.index)
-//
+
   override def grant(id: WishId): PersistenceResponse[Int] =
     EitherT(
       sql"UPDATE wishes SET granted = true WHERE id = ${id.toString}".update.run

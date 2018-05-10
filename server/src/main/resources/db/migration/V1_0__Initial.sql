@@ -15,11 +15,21 @@ CREATE TABLE secrets (
 );
 
 CREATE TABLE wishes (
-     email                    VARCHAR NOT NULL,
-     heading                  VARCHAR NOT NULL,
-     description              VARCHAR NOT NULL,
-     imageURL                 VARCHAR,
-     index                    INTEGER NOT NULL,
-     granted                  BOOLEAN NOT NULL,
-     id                       SERIAL PRIMARY KEY
+  email                    VARCHAR NOT NULL,
+  heading                  VARCHAR NOT NULL,
+  description              VARCHAR NOT NULL,
+  imageURL                 VARCHAR,
+  index                    INTEGER NOT NULL,
+  granted                  BOOLEAN NOT NULL,
+  id                       SERIAL PRIMARY KEY
+);
+
+CREATE TABLE granted (
+  email                    VARCHAR NOT NULL,
+  heading                  VARCHAR NOT NULL,
+  description              VARCHAR NOT NULL,
+  imageURL                 VARCHAR,
+  index                    INTEGER NOT NULL,
+  granted                  BOOLEAN NOT NULL,
+  id                       SERIAL PRIMARY KEY
 );
