@@ -1,11 +1,9 @@
 package com.lambdaminute.wishr.model
 
-import scala.concurrent.Future
-
-trait AuthedApi {
-  def add(x: Int, y: Int): Future[Int]
-  def getWishes(): Future[WishList]
-  def updateWish(wish: Wish): Future[Unit]
-  def createWish(wish: Wish): Future[Unit]
+trait AuthedApi[F[_]] {
+  def me(): F[UserInfo]
+  def add(x: Int, y: Int): F[Int]
+  def getWishes(): F[WishList]
+  def updateWish(wish: Wish): F[Unit]
+  def createWish(wish: Wish): F[Unit]
 }
-

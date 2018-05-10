@@ -7,12 +7,14 @@ import com.github.t3hnar.bcrypt._
 import com.lambdaminute.wishr.config.DBConfig
 import com.lambdaminute.wishr.model.tags.{Password => WishrPassword, _}
 import com.lambdaminute.wishr.model.{Stats, WishEntry}
+import com.lambdaminute.wishr.persistence
 import doobie.free.connection.ConnectionIO
 import doobie.implicits._
 import doobie.util.meta.Meta
 import doobie.util.transactor.Transactor
 import org.postgresql.util.PGInterval
 import doobie.postgres._
+
 import concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
 
@@ -30,7 +32,8 @@ class DoobiePersistence[F[_]](dbconf: DBConfig, tokenTimeout: FiniteDuration)(
   def finiteDurationToPostGresInterval(duration: FiniteDuration): String =
     s"${duration.toMinutes} minutes"
 
-  private val postgresTokenTimeout: PGInterval = new PGInterval(finiteDurationToPostGresInterval(tokenTimeout))
+  private val postgresTokenTimeout: PGInterval = new PGInterval(
+    finiteDurationToPostGresInterval(tokenTimeout))
   implicit val metainterval = Meta.other[PGInterval]("interval")
 //
 //  val createUsersTable: Update0 =
@@ -91,7 +94,15 @@ class DoobiePersistence[F[_]](dbconf: DBConfig, tokenTimeout: FiniteDuration)(
 //  println(s"Create granted wishes: ${createGrantedTableResult}")
 //  println(s"Create granted wishes: ${createGrantedTableResult}")
 //
-case class UserPass(firstName: String, hashedPassword: String)
+  case class UserPass(firstName: String, hashedPassword: String)
+
+  override def getUserInfo(token: SessionToken): PersistenceResponse[persistence.DBUser] =
+    EitherT(sql"""
+
+          SELECT firstname, lastname, users.email, secreturl FROM users, secrets
+            WHERE users.email=secrets.email AND secrets.secret=${token.toString}
+
+          """.query[DBUser].unique.transact(xa).map(Either.right[String, DBUser]))
 
   override def logIn(email: Email, password: WishrPassword): PersistenceResponse[SessionToken] = {
 
@@ -222,12 +233,6 @@ case class UserPass(firstName: String, hashedPassword: String)
         })
         .transact(xa)
     )
-
-  case class DBUser(
-      firstName: String,
-      lastName: String,
-      email: String,
-  )
 
   override def createUser(firstName: String,
                           lastName: String,

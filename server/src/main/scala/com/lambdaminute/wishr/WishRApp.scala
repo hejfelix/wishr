@@ -1,5 +1,6 @@
 package com.lambdaminute.wishr
 
+import cats.data.EitherT
 import cats.effect._
 import cats.implicits._
 import ciris._
@@ -14,7 +15,7 @@ import org.http4s.server.middleware.CORS
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
-class WishRApp[F[_]](implicit F: Effect[F]) extends StreamApp[F] {
+abstract class WishRApp extends StreamApp[IO] {
 
   private def parseDbUrl(url: String): DBConfig = {
     val driver      = url.takeWhile(_ != ':').mkString
@@ -35,8 +36,8 @@ class WishRApp[F[_]](implicit F: Effect[F]) extends StreamApp[F] {
       dbConf <- loadDbConf
     } yield ApplicationConf(dbConf)
 
-  def loadConfOrExit: F[ApplicationConf] =
-    F.delay(loadAppConf match {
+  def loadConfOrExit: IO[ApplicationConf] =
+    IO.pure(loadAppConf match {
       case Right(appConf) => appConf
       case Left(errs) =>
         sys.error(s"""Failed to load configuration:${errs.messages.mkString("\n")}""".stripMargin)
@@ -44,15 +45,18 @@ class WishRApp[F[_]](implicit F: Effect[F]) extends StreamApp[F] {
     })
 
   println("Starting...")
-  override def stream(args: List[String], requestShutdown: F[Unit]): Stream[F, ExitCode] =
+  override def stream(args: List[String], requestShutdown: IO[Unit]): Stream[IO, ExitCode] =
     for {
       applicationConf <- Stream.eval(loadConfOrExit)
 //      numMigrations   <- Stream.eval(db.init(applicationConf.dbconf))
 //     _ = println(numMigrations)
+      persistence = new DoobiePersistence[IO](applicationConf.dbconf, 50.minutes)
       wishrService <- Stream.eval(
-        F.delay(new WishRService[F](applicationConf,
-                                    new DoobiePersistence[F](applicationConf.dbconf, 50.minutes))))
-      result <- BlazeBuilder[F]
+        IO.pure(
+          new WishRService[IO](applicationConf,
+                               persistence,
+                               token => new Authed(token, persistence))))
+      result <- BlazeBuilder[IO]
         .bindHttp(port = 9000)
         .mountService(CORS(wishrService.service))
         .serve

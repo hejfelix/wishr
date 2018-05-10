@@ -1,4 +1,5 @@
 import autowire._
+import cats.Id
 import com.lambdaminute.wishr.model.{AuthedApi, Wish}
 import com.lambdaminute.wishr.model.tags._
 import hello.world.App
@@ -32,12 +33,7 @@ object Main {
   @JSExportTopLevel("entrypoint.main")
   def main(args: Array[String]): Unit = {
 
-    MyClient[AuthedApi].add(39, 3).call().foreach(println)
-    MyClient[AuthedApi].getWishes().call().foreach(println)
-    MyClient[AuthedApi].updateWish(Wish("", "", None)).call().foreach(println)
-    MyClient[AuthedApi].createWish(Wish("", "", None)).call().foreach(println)
-
-    MyClient[AuthedApi].add(39, 3).call().foreach(println)
+    MyClient[AuthedApi[Id]].me().call().onComplete(println)
 
     val container = Option(dom.document.getElementById("root")).getOrElse {
       val elem = dom.document.createElement("div")

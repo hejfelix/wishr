@@ -22,14 +22,16 @@ lazy val server = (project in file("server"))
   .settings(
     commonSettings,
     libraryDependencies ++= Seq(
-      "com.lihaoyi" %% "autowire"  % autoWireVersion,
-      "com.lihaoyi" %% "scalatags" % scalaTagsVersion
+      "com.lihaoyi"   %% "autowire"    % autoWireVersion,
+      "com.lihaoyi"   %% "scalatags"   % scalaTagsVersion,
+      "org.typelevel" %% "cats-core"   % cats,
+      "org.typelevel" %% "cats-effect" % catsEffect
     ),
-    (resources in Compile) += {
-      (fastOptJS in (client, Compile)).value
-      (artifactPath in (client, Compile, fastOptJS)).value
-    },
-    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.6"),
+//    (resources in Compile) += {
+//      (fastOptJS in (client, Compile)).value
+//      (artifactPath in (client, Compile, fastOptJS)).value
+//    },
+      addCompilerPlugin ("org.spire-math" %% "kind-projector" % "0.9.6"),
     scalacOptions ++= Seq("-Ypartial-unification")
   )
   .dependsOn(modelJVM)
@@ -77,6 +79,10 @@ lazy val client = (project in file("client"))
       "io.circe" %%% "circe-generic",
       "io.circe" %%% "circe-parser"
     ).map(_ % circeVersion),
+    libraryDependencies ++= Seq(
+      "org.typelevel" %% "cats-core"   % cats,
+      "org.typelevel" %% "cats-effect" % catsEffect
+    ),
     libraryDependencies ++= Seq(
       "me.shadaj" %%% "slinky-core",
       "me.shadaj" %%% "slinky-web",

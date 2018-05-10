@@ -1,8 +1,10 @@
 package com.lambdaminute
 
+import cats.Id
 import cats.data.{EitherT, Kleisli, OptionT}
 import cats.effect.Effect
 import cats.implicits._
+import com.lambdaminute.wishr.WishRApp
 import com.lambdaminute.wishr.config.ApplicationConf
 import com.lambdaminute.wishr.model.tags._
 import com.lambdaminute.wishr.model._
@@ -49,10 +51,11 @@ class Template {
       )
 }
 
-class WishRService[F[_]](applicationConf: ApplicationConf, persistence: Persistence[F, String])(
-    implicit F: Effect[F])
-    extends Http4sDsl[F]
-    with AuthedApi {
+class WishRService[F[_]](
+    applicationConf: ApplicationConf,
+    persistence: Persistence[F, String],
+    authedApi: SessionToken => AuthedApi[Id])(implicit F: Effect[F], ec: ExecutionContext)
+    extends Http4sDsl[F] {
 
   private val template = new Template()
 
@@ -69,6 +72,7 @@ class WishRService[F[_]](applicationConf: ApplicationConf, persistence: Persiste
   }
 
   implicit val decoder = jsonOf[F, LoginRequest]
+  implicit val encoder = jsonOf[F, UserInfo]
 
   def service(implicit ec: ExecutionContext): HttpService[F] =
     loggingService andThen ({
@@ -84,15 +88,6 @@ class WishRService[F[_]](applicationConf: ApplicationConf, persistence: Persiste
             .leftSemiflatMap(InternalServerError(_))
             .fold(identity, identity)
 
-        case request @ POST -> "api" /: path =>
-          F.flatMap(request.as[Json])(json => {
-            val map = json.asObject.map(_.toMap.mapValues(_.spaces2)).get
-            Ok(
-              Await.result(MyServer.route[AuthedApi](this)(
-                             autowire.Core.Request(path.toList, map)
-                           ),
-                           10.seconds))
-          })
         case GET -> Root / "hello" / name =>
           Ok(s"Hello, $name!")
         case POST -> Root / "notifications" =>
@@ -129,7 +124,14 @@ class WishRService[F[_]](applicationConf: ApplicationConf, persistence: Persiste
   lazy val authMiddleWare: AuthMiddleware[F, User] = AuthMiddleware(authUser, onFailure)
 
   lazy val authedService: AuthedService[User, F] = AuthedService {
-    case GET -> Root / "herro" as user => println("ERROOOOO"); Ok(s"Welcome, $user!")
+    case request @ POST -> "api" /: path as user =>
+      F.flatMap(request.req.as[Json])(json => {
+        val map = json.asObject.map(_.toMap.mapValues(_.spaces2)).get
+        val routedResult: Future[String] = MyServer.route[AuthedApi[Id]](authedApi(user.secret))(
+          autowire.Core.Request(path.toList, map)
+        )
+        Ok(Await.result(routedResult, 10.seconds))
+      })
   }
 
   //  def serveFile(path: String, request: Request): Task[Response] =
@@ -299,17 +301,5 @@ class WishRService[F[_]](applicationConf: ApplicationConf, persistence: Persiste
   //      case Left(err) => InternalServerError(err)
   //    }
   //  }
-  override def add(x: Int, y: Int): Future[Int] = Future.successful(x + y)
 
-  override def getWishes(): Future[WishList] = Future.successful(
-    WishList("john.doe",
-             "password",
-             List(
-               Wish("heading", "desc", None)
-             ))
-  )
-
-  override def updateWish(wish: Wish): Future[Unit] = Future.successful(())
-
-  override def createWish(wish: Wish): Future[Unit] = Future.successful(())
 }
