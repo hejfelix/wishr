@@ -1,6 +1,6 @@
 package com.lambdaminute.wishr.persistence
 
-import com.lambdaminute.wishr.model.tags.Email
+import com.lambdaminute.wishr.model.tags.{Email, SecretUrl}
 
-case class UserDB(firstName: String, lastName: String, email: Email)
+case class DBUser(firstName: String, lastName: String, email: Email, secretUrl: SecretUrl)
 
