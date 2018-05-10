@@ -1,6 +1,6 @@
 package com.lambdaminute
 
-import cats.data.{Kleisli, OptionT}
+import cats.data.{EitherT, Kleisli, OptionT}
 import cats.effect.Effect
 import cats.implicits._
 import com.lambdaminute.wishr.config.ApplicationConf
@@ -30,20 +30,20 @@ object MyServer extends autowire.Server[String, Decoder, Encoder] {
 
 }
 
-object Template {
+class Template {
   import scalatags.Text.all._
   import scalatags.Text.tags2.title
 
-  val txt =
+  def txt(jsPath: String) =
     "<!DOCTYPE html>" +
       html(
         head(
           title("Example Scala.js application"),
           meta(httpEquiv := "Content-Type", content := "text/html; charset=UTF-8"),
-          script(`type` := "text/javascript", src := "/client-fastopt.js"),
-          script(`type` := "text/javascript", src := "http://localhost:12345/workbench.js")
+          script(`type` := "text/javascript", src := jsPath)
         ),
         body(margin := 0)(
+          div(id := "root"),
           script("Main.main")
         )
       )
@@ -53,6 +53,8 @@ class WishRService[F[_]](applicationConf: ApplicationConf, persistence: Persiste
     implicit F: Effect[F])
     extends Http4sDsl[F]
     with AuthedApi {
+
+  private val template = new Template()
 
   def static(file: String, request: Request[F]): OptionT[F, Response[F]] =
     StaticFile.fromResource(s"/$file", Some(request))
@@ -72,12 +74,16 @@ class WishRService[F[_]](applicationConf: ApplicationConf, persistence: Persiste
     loggingService andThen ({
       HttpService[F] {
         case GET -> Root =>
-          Ok(Template.txt).withContentType(`Content-Type`(new MediaType("text", "html")))
+          Ok(template.txt("../client/target/scala-2.12/scalajs-bundler/main/client-fastopt.js")) //.withContentType(`Content-Type`(new MediaType("text", "html")))
         case request @ POST -> Root / "login" =>
-          for {
-            loginRequest <- request.as[LoginRequest]
-            result       <- Ok(loginRequest.email + ": " + loginRequest.password).addCookie(authcookieName,"SECRET")
-          } yield result
+          (for {
+            loginRequest <- EitherT.right[String](request.as[LoginRequest])
+            token        <- persistence.logIn(loginRequest.email, loginRequest.password)
+          } yield token)
+            .semiflatMap(token => Ok().map(_.addCookie(authcookieName, token)))
+            .leftSemiflatMap(InternalServerError(_))
+            .fold(identity, identity)
+
         case request @ POST -> "api" /: path =>
           F.flatMap(request.as[Json])(json => {
             val map = json.asObject.map(_.toMap.mapValues(_.spaces2)).get
@@ -94,9 +100,12 @@ class WishRService[F[_]](applicationConf: ApplicationConf, persistence: Persiste
         case request @ (POST -> Root / "add") =>
           ???
       }
-    } <+> authMiddleWare(authedService) <+> HttpService[F]{
-      case request @ GET -> path =>
-        static(path.toList.mkString("/"), request).getOrElseF(NotFound())} )
+    } <+> authMiddleWare(authedService) <+> staticFilesService)
+
+  lazy val staticFilesService = HttpService[F] {
+    case request @ GET -> path =>
+      static(path.toList.mkString("/"), request).getOrElseF(NotFound())
+  }
 
   lazy val retrieveUser: Kleisli[F, SessionToken, Either[String, User]] = Kleisli {
     (token: SessionToken) =>
@@ -117,9 +126,9 @@ class WishRService[F[_]](applicationConf: ApplicationConf, persistence: Persiste
     maybeToken.fold(err => F.pure(Left(err)), retrieveUser.run)
   }
 
-  val authMiddleWare: AuthMiddleware[F, User] = AuthMiddleware(authUser, onFailure)
+  lazy val authMiddleWare: AuthMiddleware[F, User] = AuthMiddleware(authUser, onFailure)
 
-  val authedService: AuthedService[User, F] = AuthedService {
+  lazy val authedService: AuthedService[User, F] = AuthedService {
     case GET -> Root / "herro" as user => println("ERROOOOO"); Ok(s"Welcome, $user!")
   }
 

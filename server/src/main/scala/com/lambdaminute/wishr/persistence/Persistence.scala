@@ -2,8 +2,8 @@ package com.lambdaminute.wishr.persistence
 
 import cats.data.EitherT
 import cats.effect.Effect
-import com.lambdaminute.wishr.model.tags.{Email, _}
 import com.lambdaminute.wishr.model._
+import com.lambdaminute.wishr.model.tags.{Email, _}
 
 trait Persistence[F[_], Error] {
 
@@ -11,39 +11,53 @@ trait Persistence[F[_], Error] {
 
   type PersistenceResponse[T] = EitherT[F, Error, T]
 
-  def getSessionToken(email: Email)
-
-  def logIn(email: String, password: String): PersistenceResponse[SessionToken]
-
-  def getStats(): PersistenceResponse[Stats]
-
-  def getRegistrationTokenFor(email: String): PersistenceResponse[RegistrationToken]
-
-  def getEmailForSecretUrl(secret: SecretUrl): PersistenceResponse[String]
-
-  def getEntriesForSecret(secretURL: SecretUrl): PersistenceResponse[Seq[WishEntry]]
-
-  def getSecretUrl(email: String): PersistenceResponse[SecretUrl]
-
-  def getEntriesFor(email: String): PersistenceResponse[Seq[WishEntry]]
-
-  def emailForSessionToken(token: SessionToken): PersistenceResponse[Email]
-
-  def emailForSecretURL(secret: SecretUrl): PersistenceResponse[String]
-
-  def createWish(email: String,
-                 heading: String,
-                 descr: String,
-                 imageUrl: Option[String]): PersistenceResponse[WishId]
+  /*
+      Registration stuff
+   */
+  def getRegistrationTokenFor(email: Email): PersistenceResponse[RegistrationToken]
 
   def finalize(registrationToken: RegistrationToken): PersistenceResponse[String]
 
   def createUser(firstName: String,
                  lastName: String,
-                 email: String,
-                 password: String,
+                 email: Email,
+                 password: Password,
                  secretUrl: SecretUrl,
                  registrationToken: RegistrationToken): PersistenceResponse[Int]
 
-  def grant(wishId: WishId): PersistenceResponse[Int]
+  /*
+      Account stuff
+   */
+
+  def getSessionToken(email: Email): PersistenceResponse[SessionToken]
+
+  def emailForSessionToken(token: SessionToken): PersistenceResponse[Email]
+
+  def logIn(email: Email, password: Password): PersistenceResponse[SessionToken]
+
+  def getEmailForSecretUrl(secret: SecretUrl): PersistenceResponse[String]
+
+  def getSecretUrl(email: Email): PersistenceResponse[SecretUrl]
+
+  /*
+      Wishes stuff
+   */
+  def updateWish(wishEntry: WishEntry): PersistenceResponse[Unit]
+
+  def swapWishIndices(i: WishId, j: WishId): PersistenceResponse[(Int, Int)]
+
+  def emailForSecretURL(secret: SecretUrl): PersistenceResponse[Email]
+
+  def getStats(): PersistenceResponse[Stats]
+
+  def getEntriesForSecret(secretURL: SecretUrl): PersistenceResponse[List[WishEntry]]
+
+  def getEntriesFor(email: Email): PersistenceResponse[List[WishEntry]]
+
+  def createWish(email: Email,
+                 heading: String,
+                 descr: String,
+                 imageUrl: Option[String]): PersistenceResponse[WishId]
+
+  def grant(id: WishId): PersistenceResponse[Int]
 }

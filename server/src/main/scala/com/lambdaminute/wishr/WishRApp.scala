@@ -1,25 +1,28 @@
 package com.lambdaminute.wishr
 
 import cats.effect._
+import cats.implicits._
 import ciris._
 import com.lambdaminute.WishRService
 import com.lambdaminute.wishr.config.{ApplicationConf, DBConfig}
-import fs2._
+import com.lambdaminute.wishr.persistence.DoobiePersistence
+import fs2.StreamApp.ExitCode
+import fs2.{StreamApp, _}
 import org.http4s.server.blaze.BlazeBuilder
 import org.http4s.server.middleware.CORS
-import fs2.StreamApp
-import fs2.StreamApp.ExitCode
-import cats.implicits._
-import com.lambdaminute.wishr.persistence.FakePersistence
-import concurrent.ExecutionContext.Implicits.global
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
 
 class WishRApp[F[_]](implicit F: Effect[F]) extends StreamApp[F] {
 
   private def parseDbUrl(url: String): DBConfig = {
-    val driver   = url.takeWhile(_ != ':').mkString
-    val user     = url.split("//").drop(1).head.takeWhile(_ != ':').mkString
-    val password = url.split(":").drop(2).head.takeWhile(_ != '@').mkString
-    DBConfig(user, password, url, driver)
+    val driver      = url.takeWhile(_ != ':').mkString
+    val user        = url.split("//").drop(1).head.takeWhile(_ != ':').mkString
+    val password    = url.split(":").drop(2).head.takeWhile(_ != '@').mkString
+    val filteredUrl = url.split("@").drop(1).mkString.split("/").dropRight(1).mkString
+    println(filteredUrl)
+    DBConfig(user, password, filteredUrl, driver)
   }
 
   def loadDbConf: Either[ConfigErrors, DBConfig] =
@@ -46,7 +49,9 @@ class WishRApp[F[_]](implicit F: Effect[F]) extends StreamApp[F] {
       applicationConf <- Stream.eval(loadConfOrExit)
 //      numMigrations   <- Stream.eval(db.init(applicationConf.dbconf))
 //     _ = println(numMigrations)
-      wishrService <- Stream.eval(F.delay(new WishRService[F](applicationConf, new FakePersistence[F]())))
+      wishrService <- Stream.eval(
+        F.delay(new WishRService[F](applicationConf,
+                                    new DoobiePersistence[F](applicationConf.dbconf, 50.minutes))))
       result <- BlazeBuilder[F]
         .bindHttp(port = 9000)
         .mountService(CORS(wishrService.service))

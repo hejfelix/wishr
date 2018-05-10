@@ -9,6 +9,3 @@ trait AuthedApi {
   def createWish(wish: Wish): Future[Unit]
 }
 
-trait UnauthedApi {
-  def logIn
-}

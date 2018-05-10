@@ -4,6 +4,6 @@ PostgreSQL:
     - "5432:5432"
   environment:
     - DEBUG=false
-    - DB_USER=sa
+    - DB_USER=pg
     - DB_PASS=password
-    - DB_NAME=test
+    - DB_NAME=pg
