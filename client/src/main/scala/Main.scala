@@ -1,12 +1,6 @@
-import autowire._
-import cats.Id
-import com.lambdaminute.wishr.model.{AuthedApi, Wish}
-import com.lambdaminute.wishr.model.tags._
-import hello.world.App
+import io.circe.generic.auto._
 import io.circe.parser.decode
 import io.circe.syntax._
-import io.circe._
-import io.circe.generic.auto._
 import io.circe.{Decoder, Encoder}
 import org.scalajs.dom
 import org.scalajs.dom.ext.Ajax
@@ -33,7 +27,7 @@ object Main {
   @JSExportTopLevel("entrypoint.main")
   def main(args: Array[String]): Unit = {
 
-    MyClient[AuthedApi[Id]].me().call().onComplete(println)
+//    MyClient[AuthedApi[Id]].me().call().onComplete(println)
 
     val container = Option(dom.document.getElementById("root")).getOrElse {
       val elem = dom.document.createElement("div")

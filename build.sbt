@@ -27,11 +27,7 @@ lazy val server = (project in file("server"))
       "org.typelevel" %% "cats-core"   % cats,
       "org.typelevel" %% "cats-effect" % catsEffect
     ),
-//    (resources in Compile) += {
-//      (fastOptJS in (client, Compile)).value
-//      (artifactPath in (client, Compile, fastOptJS)).value
-//    },
-      addCompilerPlugin ("org.spire-math" %% "kind-projector" % "0.9.6"),
+    addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.6"),
     scalacOptions ++= Seq("-Ypartial-unification")
   )
   .dependsOn(modelJVM)
@@ -51,17 +47,22 @@ lazy val model =
       )
     )
 
-val circeVersion  = "0.9.0-M2"
-val slinkyVersion = "0.4.2"
+val circeVersion          = "0.9.0-M2"
+val slinkyVersion         = "0.4.2"
+val slinkyWrappersVersion = "0.1.1+1-10ee384f+20180513-1357"
+val materialUiVersion     = "1.0.0-beta.43"
 
 lazy val client = (project in file("client"))
   .enablePlugins(ScalaJSBundlerPlugin, ScalaJSPlugin)
   .settings(commonSettings)
   .settings(
     (npmDependencies in Compile) ++= Seq(
-      "react"       -> "16.3.2",
-      "react-dom"   -> "16.3.2",
-      "react-proxy" -> "1.1.8"
+      "react"              -> "16.3.2",
+      "react-dom"          -> "16.3.2",
+      "react-proxy"        -> "1.1.8",
+      "material-ui"        -> materialUiVersion,
+      "@material-ui/icons" -> materialUiVersion,
+      "react-router-dom"   -> "4.2.2",
     ),
     (npmDevDependencies in Compile) ++= Seq(
       "file-loader"         -> "1.1.11",
@@ -72,8 +73,12 @@ lazy val client = (project in file("client"))
     )
   )
   .settings(
-    libraryDependencies ++= Seq("com.lihaoyi" %%% "autowire"  % autoWireVersion,
-                                "com.lihaoyi" %%% "scalatags" % scalaTagsVersion),
+    libraryDependencies ++= Seq(
+      "com.lihaoyi"      %%% "autowire"                     % autoWireVersion,
+      "com.lihaoyi"      %%% "scalatags"                    % scalaTagsVersion,
+      "com.lambdaminute" %%% "slinky-wrappers-material-ui"  % slinkyWrappersVersion,
+      "com.lambdaminute" %%% "slinky-wrappers-react-router" % slinkyWrappersVersion
+    ),
     libraryDependencies ++= Seq(
       "io.circe" %%% "circe-core",
       "io.circe" %%% "circe-generic",
