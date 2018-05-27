@@ -29,7 +29,7 @@ abstract class WishRApp extends StreamApp[IO] {
   def loadDbConf: Either[ConfigErrors, DBConfig] =
     Right(
       loadConfig(env[String]("DB_URL"))(parseDbUrl)
-        .getOrElse(DBConfig("postgres", "password", "localhost:5432", "jdbc:postgresql")))
+        .getOrElse(DBConfig("pg", "password", "localhost:5432", "jdbc:postgresql")))
 
   def loadAppConf: Either[ConfigErrors, ApplicationConf] =
     for {
@@ -57,8 +57,8 @@ abstract class WishRApp extends StreamApp[IO] {
                                persistence,
                                token => new Authed(token, persistence))))
       result <- BlazeBuilder[IO]
-        .bindHttp(port = 9000)
-        .mountService(CORS(wishrService.service))
+        .bindHttp(port = 9000,host = "0.0.0.0")
+        .mountService(wishrService.service)
         .serve
     } yield result
 

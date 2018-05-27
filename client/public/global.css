@@ -2,6 +2,10 @@
     margin-top: 1em !important;
 }
 
+body {
+    margin: 0px;
+}
+
 .card {
     min-width: 20em;
 }

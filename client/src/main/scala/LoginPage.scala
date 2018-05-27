@@ -2,14 +2,20 @@ import com.lambdaminute.slinkywrappers.materialui.AlignContent.center
 import com.lambdaminute.slinkywrappers.materialui._
 import com.lambdaminute.slinkywrappers.materialui.align.justify
 import com.lambdaminute.slinkywrappers.materialui.cards._
+import com.lambdaminute.wishr.model._
+import com.lambdaminute.wishr.model.tags._
 import org.scalajs.dom.Event
 import org.scalajs.dom.raw.{HTMLFormElement, HTMLInputElement}
 import slinky.core.StatelessComponent
 import slinky.core.annotations.react
 import slinky.core.facade.ReactElement
 import slinky.web.html._
+import autowire._
 
+import scala.concurrent.Future
 import scala.scalajs.js
+import concurrent.ExecutionContext.Implicits.global
+import scala.util.{Failure, Success}
 
 @react class LoginPage extends StatelessComponent {
   type Props = Unit
@@ -38,6 +44,12 @@ import scala.scalajs.js
     val email =
       elements.namedItem(emailInputName).asInstanceOf[HTMLInputElement].value
     println(s"Submitting state: ${email}, ${password}")
+
+    MyClient[UnauthedApi].logIn(email.asEmail, password.asPassword).call().onComplete {
+      case Success(value) => println(s"Successfully logged in ${value}")
+      case Failure(err)   => System.err.println(s"Failed to log in: ${err.getMessage}")
+    }
+
   }
 
   private def cardContent =

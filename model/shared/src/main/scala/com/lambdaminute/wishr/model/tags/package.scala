@@ -29,15 +29,18 @@ package object tags {
     def asPassword: Password                   = shapeless.tag[Tags.Password][String](s)
   }
 
-  implicit val emailDecoder: Decoder[Email]         = Decoder[String].map(_.asEmail)
-  implicit val passwoordDecoder: Decoder[Password]  = Decoder[String].map(_.asPassword)
-  implicit val secretUrlDecoder: Decoder[SecretUrl] = Decoder[String].map(_.asSecretUrl)
+  implicit val emailDecoder: Decoder[Email]               = Decoder[String].map(_.asEmail)
+  implicit val passwoordDecoder: Decoder[Password]        = Decoder[String].map(_.asPassword)
+  implicit val secretUrlDecoder: Decoder[SecretUrl]       = Decoder[String].map(_.asSecretUrl)
+  implicit val sessionTokenDecoder: Decoder[SessionToken] = Decoder[String].map(_.asSessionToken)
 
-  implicit val emailEncoder: Encoder[Email]         = Encoder.apply[String].contramap[Email](identity)
+  implicit val emailEncoder: Encoder[Email] = Encoder.apply[String].contramap[Email](identity)
   implicit val passwordEncoder: Encoder[Password] =
     Encoder.apply[String].contramap[Password](identity)
   implicit val secretUrlEncoder: Encoder[SecretUrl] =
     Encoder.apply[String].contramap[SecretUrl](identity)
+  implicit val sessionTokenEncoder: Encoder[SessionToken] =
+    Encoder.apply[String].contramap[SessionToken](identity)
 
   implicit class IntTaggable(i: Int) {
     def asWishId: WishId = shapeless.tag[Tags.WishId][Int](i)
