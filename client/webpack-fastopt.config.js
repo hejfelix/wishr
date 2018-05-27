@@ -21,7 +21,8 @@ module.exports = {
                 context: ["/auth", "/api"],
                 target: "http://localhost:9000"
             }
-        ]
+        ],
+        historyApiFallback: true
     },
     resolve: {
         alias: {

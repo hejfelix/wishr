@@ -1,4 +1,3 @@
-import sbt.Keys.libraryDependencies
 import Versions._
 
 lazy val commonSettings = Seq(
@@ -12,19 +11,19 @@ addCommandAlias("startBackend", ";project server;~reStart")
 
 scalaVersion in ThisBuild := scalaV
 
-val autoWireVersion  = "0.2.6"
+val autoWireVersion = "0.2.6"
 val scalaTagsVersion = "0.6.7"
 
 lazy val modelJVM = model.jvm
-lazy val modelJS  = model.js
+lazy val modelJS = model.js
 
 lazy val server = (project in file("server"))
   .settings(
     commonSettings,
     libraryDependencies ++= Seq(
-      "com.lihaoyi"   %% "autowire"    % autoWireVersion,
-      "com.lihaoyi"   %% "scalatags"   % scalaTagsVersion,
-      "org.typelevel" %% "cats-core"   % cats,
+      "com.lihaoyi" %% "autowire" % autoWireVersion,
+      "com.lihaoyi" %% "scalatags" % scalaTagsVersion,
+      "org.typelevel" %% "cats-core" % cats,
       "org.typelevel" %% "cats-effect" % catsEffect
     ),
     addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.6"),
@@ -40,43 +39,44 @@ lazy val model =
     .jsSettings(commonSettings)
     .settings(
       libraryDependencies ++= Seq(
-        "com.chuusai" %%% "shapeless"    % Versions.shapelessVersion,
-        "io.circe"    %% "circe-core"    % circeVersion,
-        "io.circe"    %% "circe-generic" % circeVersion,
-        "io.circe"    %% "circe-parser"  % circeVersion,
+        "com.chuusai" %%% "shapeless" % Versions.shapelessVersion,
+        "io.circe" %% "circe-core" % circeVersion,
+        "io.circe" %% "circe-generic" % circeVersion,
+        "io.circe" %% "circe-parser" % circeVersion
       )
     )
 
-val circeVersion          = "0.9.0-M2"
-val slinkyVersion         = "0.4.2"
-val slinkyWrappersVersion = "0.1.1+1-10ee384f+20180513-1357"
-val materialUiVersion     = "1.0.0-beta.43"
+val circeVersion = "0.9.0-M2"
+val slinkyVersion = "0.4.2"
+val slinkyWrappersVersion = "0.1.1+4-578958f8+20180527-1329"
+val materialUiVersion = "1.0.0-beta.43"
 
 lazy val client = (project in file("client"))
   .enablePlugins(ScalaJSBundlerPlugin, ScalaJSPlugin)
   .settings(commonSettings)
   .settings(
     (npmDependencies in Compile) ++= Seq(
-      "react"              -> "16.3.2",
-      "react-dom"          -> "16.3.2",
-      "react-proxy"        -> "1.1.8",
-      "material-ui"        -> materialUiVersion,
+      "react" -> "16.3.2",
+      "react-dom" -> "16.3.2",
+      "react-proxy" -> "1.1.8",
+      "material-ui" -> materialUiVersion,
       "@material-ui/icons" -> materialUiVersion,
-      "react-router-dom"   -> "4.2.2",
+      "react-router-dom" -> "4.2.2"
     ),
     (npmDevDependencies in Compile) ++= Seq(
-      "file-loader"         -> "1.1.11",
-      "style-loader"        -> "0.20.3",
-      "css-loader"          -> "0.28.11",
+      "file-loader" -> "1.1.11",
+      "style-loader" -> "0.20.3",
+      "css-loader" -> "0.28.11",
       "html-webpack-plugin" -> "3.2.0",
       "copy-webpack-plugin" -> "4.5.1",
+      "glamor" -> "2.20.40"
     )
   )
   .settings(
     libraryDependencies ++= Seq(
-      "com.lihaoyi"      %%% "autowire"                     % autoWireVersion,
-      "com.lihaoyi"      %%% "scalatags"                    % scalaTagsVersion,
-      "com.lambdaminute" %%% "slinky-wrappers-material-ui"  % slinkyWrappersVersion,
+      "com.lihaoyi" %%% "autowire" % autoWireVersion,
+      "com.lihaoyi" %%% "scalatags" % scalaTagsVersion,
+      "com.lambdaminute" %%% "slinky-wrappers-material-ui" % slinkyWrappersVersion,
       "com.lambdaminute" %%% "slinky-wrappers-react-router" % slinkyWrappersVersion
     ),
     libraryDependencies ++= Seq(
@@ -85,7 +85,7 @@ lazy val client = (project in file("client"))
       "io.circe" %%% "circe-parser"
     ).map(_ % circeVersion),
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core"   % cats,
+      "org.typelevel" %% "cats-core" % cats,
       "org.typelevel" %% "cats-effect" % catsEffect
     ),
     libraryDependencies ++= Seq(
@@ -97,8 +97,8 @@ lazy val client = (project in file("client"))
     libraryDependencies += "org.scala-js" %%% "scalajs-dom" % "0.9.2",
     webpackConfigFile in fastOptJS := Some(baseDirectory.value / "webpack-fastopt.config.js"),
     webpackConfigFile in fullOptJS := Some(baseDirectory.value / "webpack-opt.config.js"),
-    webpackDevServerExtraArgs in fastOptJS := Seq("--inline", "--hot"),
-    webpackBundlingMode in fastOptJS := BundlingMode.LibraryOnly(),
+    webpackDevServerExtraArgs in fastOptJS := Seq("--inline", "--hot", "--host", "0.0.0.0"),
+    webpackBundlingMode in fastOptJS := BundlingMode.LibraryOnly()
   )
   .settings(
     version in webpack := "4.5.0",
