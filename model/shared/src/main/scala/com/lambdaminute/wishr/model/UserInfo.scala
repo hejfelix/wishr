@@ -12,8 +12,9 @@ object UserInfo {
       lname <- c.get[String]("lastName")
       email <- c.get[String]("email")
       secretUrl <- c.get[String]("secretUrl")
-    } yield UserInfo(fname,lname,email.asEmail,secretUrl.asSecretUrl)
+      token <- c.get[String]("sessionToken")
+    } yield UserInfo(fname,lname,email.asEmail,secretUrl.asSecretUrl,token.asSessionToken)
 
 }
-case class UserInfo(firstName: String, lastName: String, email: Email, secretUrl: SecretUrl)
+case class UserInfo(firstName: String, lastName: String, email: Email, secretUrl: SecretUrl, sessionToken: SessionToken)
 

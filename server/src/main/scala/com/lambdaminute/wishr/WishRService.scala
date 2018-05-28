@@ -17,7 +17,8 @@ import org.http4s.dsl.Http4sDsl
 import org.http4s.headers._
 import org.http4s.server._
 import org.http4s.circe._
-import org.http4s.{AuthedService, HttpService, MediaType, Request, Response, StaticFile}
+import org.http4s.{AuthedService, Header, HttpService, MediaType, Request, Response, StaticFile}
+
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 
@@ -65,47 +66,39 @@ class WishRService[F[_]](
   private val logger = getLogger("BLOOP")
 
   private val loggingService: Kleisli[OptionT[F, ?], Request[F], Request[F]] = Kleisli { x =>
-    logger.debug(s"${x.method}: ${x.pathInfo}")
-    OptionT.pure[F](x)
+    for {
+      body <- OptionT(x.bodyAsText.compile.foldSemigroup)
+      _ = logger.debug(s"${x.method}: ${x.pathInfo}, ${body}")
+      result <- OptionT.pure[F](x)
+    } yield result
   }
 
-  implicit val decoder = jsonOf[F, LoginRequest]
+  implicit val decoder = jsonOf[F, LoginRequest](F, LoginRequest.decoder)
   implicit val encoder = jsonOf[F, UserInfo]
 
-  def service(implicit ec: ExecutionContext): HttpService[F] = {
-    val value = authMiddleWare(authedService)
-    loggingService andThen (HttpService[F] {
-      case GET -> Root =>
-        Ok(template.txt("../client/target/scala-2.12/scalajs-bundler/main/client-fastopt.js")) //.withContentType(`Content-Type`(new MediaType("text", "html")))
-      case request @ POST -> ("api" /: _) =>
-        logger.debug(s"LOOOGIN: ")
-        val x: F[Response[F]] = (for {
-          loginRequest <- EitherT.right[String](request.as[LoginRequest])
-          _ = println(loginRequest)
-          token    <- persistence.logIn(loginRequest.email, loginRequest.password)
-          userInfo <- persistence.getUserInfo(token)
-        } yield {
-          println(userInfo)
-          (userInfo, token)
-        }).semiflatMap {
-            case (userInfo, token) =>
-              val spaces = userInfo.asJson.spaces2
-              println(spaces)
-              println(decode[UserInfo](spaces))
-              Ok(userInfo.asJson).map(_.addCookie(authcookieName, token))
-          }
-          .leftSemiflatMap(InternalServerError(_))
-          .fold(identity, identity)
-        x
-      case GET -> Root / "hello" / name =>
-        Ok(s"Hello, $name!")
-      case POST -> Root / "notifications" =>
-        Ok("{}")
-      case request @ (POST -> Root / "add") =>
-        ???
-    }
-      <+> value <+> staticFilesService)
-  }
+  val unauthedService: HttpService[F] = loggingService andThen HttpService[F] {
+//    case GET -> Root =>
+//      Ok(template.txt("../client/target/scala-2.12/scalajs-bundler/main/client-fastopt.js")) //.withContentType(`Content-Type`(new MediaType("text", "html")))
+    case request @ POST -> _ =>
+      (for {
+        body <- EitherT.right(request.bodyAsText.compile.foldSemigroup)
+        _ = println(s"login: ${body}")
+        loginRequest <- EitherT.right[String](request.as[LoginRequest])
+        _ = logger.debug(s"Login request: ${loginRequest}")
+        token  <- persistence.logIn(loginRequest.email, loginRequest.password)
+        dbUser <- persistence.getUserInfo(token)
+      } yield {
+        (dbUser, token)
+      }).semiflatMap {
+          case (dbUser, token) =>
+            val spaces = dbUser.asJson.spaces2
+            println(spaces)
+            Ok(UserInfo(dbUser.firstName, dbUser.lastName, dbUser.email, dbUser.secretUrl, token).asJson)
+              .map(_.addCookie(sessionTokenHeaderKey, token))
+        }
+        .leftSemiflatMap(InternalServerError(_))
+        .fold(identity, identity)
+  } <+> staticFilesService
 
   lazy val staticFilesService = HttpService[F] {
     case request @ GET -> path =>
@@ -114,33 +107,37 @@ class WishRService[F[_]](
 
   lazy val retrieveUser: Kleisli[F, SessionToken, Either[String, User]] = Kleisli {
     (token: SessionToken) =>
-      persistence.emailForSessionToken(token).map(email => User(email, token)).value
+      persistence.emailForSessionToken(token).map{email =>
+        println(email)
+        User(email, token)}.value
   }
 
   lazy val onFailure: AuthedService[String, F] = Kleisli(
     req => {
-      println(s"FAILED AUTH ${req}")
+      println(s"FAILED AUTH ${req} ${req.authInfo}")
       OptionT.liftF(Forbidden(req.authInfo))
     }
   )
-  lazy val authcookieName = "authcookie"
+
+  lazy val sessionTokenHeaderKey = "sessiontoken"
 
   lazy val authUser: Kleisli[F, Request[F], Either[String, User]] = Kleisli { request =>
-    val maybeToken = for {
-      header <- Cookie.from(request.headers).toRight("Cookie parsing error")
-      token <- header.values.toList
-        .find(_.name == authcookieName)
-        .toRight(s"Couldn't find the authcookie with name: ${authcookieName}")
-    } yield token.content.asSessionToken
-    maybeToken.fold(err => F.pure(Left(err)), retrieveUser.run)
+    val headersList = request.headers.toList
+    println(headersList)
+    println(headersList.find(_.name.toString == sessionTokenHeaderKey).map(_.value))
+    val token: Option[Header] = headersList.find(_.name.toString() == sessionTokenHeaderKey)
+    token
+      .map(_.value.asSessionToken)
+      .toRight("No session token found")
+      .fold(err => F.pure(Left(err)), retrieveUser.run)
   }
 
   lazy val authMiddleWare: AuthMiddleware[F, User] = AuthMiddleware(authUser, onFailure)
 
   lazy val authedService: AuthedService[User, F] = AuthedService {
-    case request @ POST -> "api" /: path as user =>
+    case request @ (POST -> path) as user =>
       F.flatMap(request.req.as[Json])(json => {
-        println(request)
+        println(s"Authed request: ${request}")
         val map = json.asObject.map(_.toMap.mapValues(_.spaces2)).get
         val routedResult: Future[String] = MyServer.route[AuthedApi[Id]](authedApi(user.secret))(
           autowire.Core.Request(path.toList, map)
@@ -148,6 +145,9 @@ class WishRService[F[_]](
         Ok(Await.result(routedResult, 10.seconds))
       })
   }
+
+  lazy val wrappedAuthedService: HttpService[F] = loggingService andThen authMiddleWare(
+    authedService)
 
   //  def serveFile(path: String, request: Request): Task[Response] =
   //    StaticFile

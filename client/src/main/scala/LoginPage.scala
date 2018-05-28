@@ -45,8 +45,10 @@ import scala.util.{Failure, Success}
       elements.namedItem(emailInputName).asInstanceOf[HTMLInputElement].value
     println(s"Submitting state: ${email}, ${password}")
 
-    MyClient[UnauthedApi].logIn(email.asEmail, password.asPassword).call().onComplete {
-      case Success(value) => println(s"Successfully logged in ${value}")
+    Client[UnauthedApi].logIn(email.asEmail, password.asPassword).call().onComplete {
+      case Success(value) =>
+        println(s"Successfully logged in ${value}")
+        AuthClient.setToken(value.sessionToken)
       case Failure(err)   => System.err.println(s"Failed to log in: ${err.getMessage}")
     }
 

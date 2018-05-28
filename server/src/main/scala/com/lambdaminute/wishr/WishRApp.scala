@@ -57,8 +57,9 @@ abstract class WishRApp extends StreamApp[IO] {
                                persistence,
                                token => new Authed(token, persistence))))
       result <- BlazeBuilder[IO]
-        .bindHttp(port = 9000,host = "0.0.0.0")
-        .mountService(wishrService.service)
+        .bindHttp(port = 9000, host = "0.0.0.0")
+        .mountService(wishrService.unauthedService, "/api/")
+        .mountService(wishrService.wrappedAuthedService, "/authed/api/")
         .serve
     } yield result
 

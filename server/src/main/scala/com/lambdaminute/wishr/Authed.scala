@@ -13,7 +13,7 @@ class Authed(token: SessionToken, persistence: Persistence[IO, String]) extends 
       .getUserInfo(token)
       .leftSemiflatMap(err => IO.raiseError[UserInfo](new Exception(err)))
       .fold(x => x,
-            dbuser => UserInfo(dbuser.firstName, dbuser.lastName, dbuser.email, dbuser.secretUrl))
+            dbuser => UserInfo(dbuser.firstName, dbuser.lastName, dbuser.email, dbuser.secretUrl, token))
       .unsafeRunSync()
 
   override def add(x: Int, y: Int): Int = ???
