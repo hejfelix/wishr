@@ -1,7 +1,4 @@
-package glamor
-
-import com.lambdaminute.slinkywrappers.materialui.Anchor
-import com.lambdaminute.slinkywrappers.materialui.Drawer
+import com.lambdaminute.slinkywrappers.materialui.{Anchor, Drawer}
 import slinky.core.StatelessComponent
 import slinky.core.annotations.react
 import slinky.core.facade.ReactElement

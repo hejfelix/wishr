@@ -8,6 +8,21 @@ body {
 
 .card {
     min-width: 20em;
+    max-width: 30em;
+}
+
+.wishCardMedia {
+    height: 15em;
+    width: 15em;
+}
+
+.wishCard {
+    display: flex;
+}
+
+.cardDiv {
+    display: flex;
+    flex-direction: column;
 }
 
 .title {

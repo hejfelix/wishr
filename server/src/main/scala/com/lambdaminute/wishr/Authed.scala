@@ -3,7 +3,7 @@ package com.lambdaminute.wishr
 import cats.Id
 import cats.effect.IO
 import com.lambdaminute.wishr.model.tags.SessionToken
-import com.lambdaminute.wishr.model.{AuthedApi, UserInfo, Wish, WishList}
+import com.lambdaminute.wishr.model._
 import com.lambdaminute.wishr.persistence.Persistence
 
 class Authed(token: SessionToken, persistence: Persistence[IO, String]) extends AuthedApi[Id] {
@@ -18,7 +18,16 @@ class Authed(token: SessionToken, persistence: Persistence[IO, String]) extends 
 
   override def add(x: Int, y: Int): Int = ???
 
-  override def getWishes(): WishList = ???
+  override def getWishes(): WishList =
+    (for {
+      userInfo <- persistence.getUserInfo(token)
+      wishes <- persistence.getEntriesFor(userInfo.email)
+    } yield (wishes, userInfo))
+      .leftSemiflatMap(err => IO.raiseError[WishList](new Exception(err)))
+    .fold(x => x, {
+      case (wishes,userInfo) => WishList(userInfo.email, wishes.map(w => Wish(w.heading,w.desc,Option(w.image))))
+    })
+    .unsafeRunSync()
 
   override def updateWish(wish: Wish): Unit = ???
 

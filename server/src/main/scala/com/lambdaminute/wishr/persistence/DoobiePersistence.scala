@@ -204,7 +204,7 @@ class DoobiePersistence[F[_]](dbconf: DBConfig, tokenTimeout: FiniteDuration)(
 
   override def getEntriesFor(email: Email): PersistenceResponse[List[WishEntry]] =
     EitherT(
-      sql"SELECT email, heading, description, imageURL, id, index FROM wishes WHERE email=${email.toString}"
+      sql"SELECT email, heading, description, imageURL, id, index FROM wishes WHERE email=${email.toString} AND granted=FALSE"
         .query[WishEntry]
         .to[List]
         .attemptSql

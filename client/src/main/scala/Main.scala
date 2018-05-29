@@ -24,7 +24,9 @@ object AuthClient extends autowire.Client[String, Decoder, Encoder] {
   def read[Result: Decoder](p: String) = {
     println(s"Decoding ${p}")
     println(s"Decoding ${parse(p)}")
-    decode[Result](p).right.get
+    val result = decode[Result](p)
+    println(result)
+    result.right.get
   }
   override def doCall(req: Request): Future[String] = {
     val json = req.args.mapValues(v => v.drop(1).dropRight(1)).asJson.spaces2
