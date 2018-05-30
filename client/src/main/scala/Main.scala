@@ -13,63 +13,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.scalajs.js.annotation.JSExportTopLevel
 
-// client-side implementation, and call-site
-object AuthClient extends autowire.Client[String, Decoder, Encoder] {
 
-  private var token: Option[SessionToken] = None
-  def setToken(sessionToken: SessionToken): Unit =
-    token = Option(sessionToken)
 
-  def write[Result: Encoder](r: Result) = r.asJson.spaces2
-  def read[Result: Decoder](p: String) = {
-    println(s"Decoding ${p}")
-    println(s"Decoding ${parse(p)}")
-    val result = decode[Result](p)
-    println(result)
-    result.right.get
-  }
-  override def doCall(req: Request): Future[String] = {
-    val json = req.args.mapValues(v => v.drop(1).dropRight(1)).asJson.spaces2
-    println(s"Sending json ${json}")
-    Ajax
-      .post("/authed/api/" + req.path.mkString("/"),
-            json,
-            headers = Map(
-              "sessiontoken" -> token.get
-            ))
-      .map(_.responseText)
-      .map { r =>
-        println(r)
-        r
-      }
-  }
-}
-object Client extends autowire.Client[String, Decoder, Encoder] {
-
-  def write[Result: Encoder](r: Result) = r.asJson.spaces2
-  def read[Result: Decoder](p: String) = {
-    println(s"Decoding ${p}")
-    println(s"Decoding ${parse(p)}")
-    decode[Result](p).right.get
-  }
-  override def doCall(req: Request): Future[String] = {
-    val json = req.args.mapValues(v => v.drop(1).dropRight(1)).asJson.spaces2
-    println(s"Sending json ${json}")
-    Ajax
-      .post("/api/" + req.path.mkString("/"), json)
-      .map { response =>
-        println(response.getAllResponseHeaders())
-        println(response.getResponseHeader("Cookie"))
-        println(response.getResponseHeader("Set-Cookie"))
-        response
-      }
-      .map(_.responseText)
-      .map { r =>
-        println(r)
-        r
-      }
-  }
-}
 
 object Main {
 

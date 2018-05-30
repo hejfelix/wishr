@@ -15,6 +15,7 @@ import com.lambdaminute.slinkywrappers.materialui.Sizes.{`16` => sixteen}
 import com.lambdaminute.wishr.model._
 import com.lambdaminute.wishr.model.tags.SessionToken
 import io.circe.generic.auto._
+import slinky.core.facade.ReactElement
 @react class EditPage extends Component {
 
   case class State(wishes: List[Wish] = List.empty, owner: Option[String] = None)
@@ -22,14 +23,18 @@ import io.circe.generic.auto._
 
   override def initialState: State = State()
 
-  def render() =
+  def render(): ReactElement =
     div(
       Grid(container = true,
            direction = column,
            justify = center,
            spacing = sixteen,
-           alignItems = center)(state.wishes.map(w =>
-        Grid(xs = twelve, item = true).withKey(w.heading)(WishCard(w)))))
+           alignItems = center)(wishCards))
+
+  private def wishCards: List[ReactElement] =
+    state.wishes.map(w =>
+      Grid(xs = twelve, item = true).withKey(w.heading)(WishCard(w)))
+
 
   override def componentDidMount(): Unit = {
     super.componentDidMount()

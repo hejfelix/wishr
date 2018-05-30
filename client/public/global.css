@@ -11,13 +11,20 @@ body {
     max-width: 30em;
 }
 
-.wishCardMedia {
-    height: 15em;
-    width: 15em;
+.wishCardImg {
+    max-height:18em;
+    max-width: 20em;
 }
 
-.wishCard {
+.wishCardContainer {
     display: flex;
+    min-height: 20em;
+    width: 44em;
+    padding: 2em;
+}
+
+.imageGridItem {
+    text-align: center;
 }
 
 .cardDiv {
