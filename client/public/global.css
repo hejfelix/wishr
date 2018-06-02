@@ -12,13 +12,13 @@ body {
 }
 
 .wishCardImg {
-    max-height:18em;
+    max-height: 15em;
     max-width: 20em;
 }
 
 .wishCardContainer {
     display: flex;
-    min-height: 20em;
+    min-height: 16em;
     width: 44em;
     padding: 2em;
 }

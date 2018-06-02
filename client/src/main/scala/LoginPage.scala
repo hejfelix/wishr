@@ -11,6 +11,7 @@ import slinky.core.annotations.react
 import slinky.core.facade.ReactElement
 import slinky.web.html._
 import autowire._
+import com.lambdaminute.slinkywrappers.reactrouter.Redirect
 
 import scala.concurrent.Future
 import scala.scalajs.js
@@ -18,7 +19,7 @@ import concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
 
 @react class LoginPage extends StatelessComponent {
-  type Props = Unit
+  case class Props(push: js.Function1[String, Unit])
   private val emailInputName    = "email"
   private val passwordInputName = "password"
 
@@ -49,7 +50,13 @@ import scala.util.{Failure, Success}
       case Success(value) =>
         println(s"Successfully logged in ${value}")
         AuthClient.setToken(value.sessionToken)
-      case Failure(err)   => System.err.println(s"Failed to log in: ${err.getMessage}")
+
+        val location = js.Dynamic.literal(
+          pathname = AppRoutes.editWishesPath,
+          state = js.Dynamic.literal()
+        )
+        props.push(AppRoutes.editWishesPath)
+      case Failure(err) => System.err.println(s"Failed to log in: ${err.getMessage}")
     }
 
   }
@@ -58,6 +65,7 @@ import scala.util.{Failure, Success}
     CardContent(
       form(onSubmit := handleSubmit)(
         TextField(label = "E-mail",
+                  autoFocus = true,
                   placeholder = "e-mail",
                   className = "textField",
                   name = emailInputName),

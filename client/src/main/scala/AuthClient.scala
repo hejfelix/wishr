@@ -24,6 +24,8 @@ object AuthClient extends autowire.Client[String, Decoder, Encoder] {
     cookieMap.get(tokenCookieKey).map(_.asSessionToken)
   }
 
+  def isLoggedIn: Boolean = cookieMap.isDefinedAt(tokenCookieKey)
+
   def setToken(sessionToken: SessionToken): Unit = {
     println( document.cookie)
     document.cookie = s"$tokenCookieKey=$sessionToken;"

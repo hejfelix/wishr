@@ -2,7 +2,7 @@ package com.lambdaminute.wishr
 
 import cats.Id
 import cats.effect.IO
-import com.lambdaminute.wishr.model.tags.SessionToken
+import com.lambdaminute.wishr.model.tags._
 import com.lambdaminute.wishr.model._
 import com.lambdaminute.wishr.persistence.Persistence
 
@@ -25,7 +25,7 @@ class Authed(token: SessionToken, persistence: Persistence[IO, String]) extends 
     } yield (wishes, userInfo))
       .leftSemiflatMap(err => IO.raiseError[WishList](new Exception(err)))
     .fold(x => x, {
-      case (wishes,userInfo) => WishList(userInfo.email, wishes.map(w => Wish(w.heading,w.desc,Option(w.image))))
+      case (wishes,userInfo) => WishList(userInfo.email, wishes.map(w => Wish(w.heading,w.desc,Option(w.image),w.id.asWishId)))
     })
     .unsafeRunSync()
 
