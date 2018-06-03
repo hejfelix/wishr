@@ -51,10 +51,10 @@ class Template {
       )
 }
 
-class WishRService[F[_]](
-    applicationConf: ApplicationConf,
-    persistence: Persistence[F, String],
-    authedApi: SessionToken => AuthedApi[Id])(implicit F: Effect[F], ec: ExecutionContext)
+class WishRService[F[_]](applicationConf: ApplicationConf,
+                         persistence: Persistence[F, String],
+                         authedApi: SessionToken => AuthedApi[Id],
+                         unauthed: UnauthedApi)(implicit F: Effect[F], ec: ExecutionContext)
     extends Http4sDsl[F] {
 
   private val template = new Template()
@@ -79,25 +79,35 @@ class WishRService[F[_]](
   val unauthedService: HttpService[F] = loggingService andThen HttpService[F] {
 //    case GET -> Root =>
 //      Ok(template.txt("../client/target/scala-2.12/scalajs-bundler/main/client-fastopt.js")) //.withContentType(`Content-Type`(new MediaType("text", "html")))
-    case request @ POST -> _ =>
-      (for {
-        body <- EitherT.right(request.bodyAsText.compile.foldSemigroup)
-        _ = println(s"login: ${body}")
-        loginRequest <- EitherT.right[String](request.as[LoginRequest])
-        _ = logger.debug(s"Login request: ${loginRequest}")
-        token  <- persistence.logIn(loginRequest.email, loginRequest.password)
-        dbUser <- persistence.getUserInfo(token)
-      } yield {
-        (dbUser, token)
-      }).semiflatMap {
-          case (dbUser, token) =>
-            val spaces = dbUser.asJson.spaces2
-            println(spaces)
-            Ok(UserInfo(dbUser.firstName, dbUser.lastName, dbUser.email, dbUser.secretUrl, token).asJson)
-              .map(_.addCookie(sessionTokenHeaderKey, token))
-        }
-        .leftSemiflatMap(InternalServerError(_))
-        .fold(identity, identity)
+    case request @ POST -> path =>
+      F.flatMap(request.as[Json]) { json =>
+        println(s"Unauthed request to path ${path.toList}")
+        val map = json.asObject.map(_.toMap.mapValues(_.spaces2)).get
+        println(map)
+        val routedResult: Future[String] = MyServer.route[UnauthedApi](unauthed)(
+          autowire.Core.Request(path.toList, map)
+        )
+        Ok(Await.result(routedResult, 10.seconds))
+      }
+//
+//      (for {
+//        body <- EitherT.right(request.bodyAsText.compile.foldSemigroup)
+//        _ = println(s"login: ${body}")
+//        loginRequest <- EitherT.right[String](request.as[LoginRequest])
+//        _ = logger.debug(s"Login request: ${loginRequest}")
+//        token  <- persistence.logIn(loginRequest.email, loginRequest.password)
+//        dbUser <- persistence.getUserInfo(token)
+//      } yield {
+//        (dbUser, token)
+//      }).semiflatMap {
+//          case (dbUser, token) =>
+//            val spaces = dbUser.asJson.spaces2
+//            println(spaces)
+//            Ok(UserInfo(dbUser.firstName, dbUser.lastName, dbUser.email, dbUser.secretUrl, token).asJson)
+//              .map(_.addCookie(sessionTokenHeaderKey, token))
+//        }
+//        .leftSemiflatMap(InternalServerError(_))
+//        .fold(identity, identity)
   } <+> staticFilesService
 
   lazy val staticFilesService = HttpService[F] {
@@ -107,9 +117,13 @@ class WishRService[F[_]](
 
   lazy val retrieveUser: Kleisli[F, SessionToken, Either[String, User]] = Kleisli {
     (token: SessionToken) =>
-      persistence.emailForSessionToken(token).map{email =>
-        println(email)
-        User(email, token)}.value
+      persistence
+        .emailForSessionToken(token)
+        .map { email =>
+          println(email)
+          User(email, token)
+        }
+        .value
   }
 
   lazy val onFailure: AuthedService[String, F] = Kleisli(
@@ -137,8 +151,9 @@ class WishRService[F[_]](
   lazy val authedService: AuthedService[User, F] = AuthedService {
     case request @ (POST -> path) as user =>
       F.flatMap(request.req.as[Json])(json => {
-        println(s"Authed request: ${request}")
+        println(s"Authed request: $request")
         val map = json.asObject.map(_.toMap.mapValues(_.spaces2)).get
+        println(map)
         val routedResult: Future[String] = MyServer.route[AuthedApi[Id]](authedApi(user.secret))(
           autowire.Core.Request(path.toList, map)
         )

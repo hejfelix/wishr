@@ -31,7 +31,7 @@ import scala.util.{Failure, Success}
   def render(): ReactElement =
     div(
       Grid(container = true, justify = center, alignItems = center)(
-        Grid(item = true)(
+        Grid(item = true, xs = true)(
           Card(raised = true, className = "card")(
             Grid(container = true, justify = center, alignItems = center)(cardContent))
         ))

@@ -18,16 +18,14 @@ object Client extends autowire.Client[String, Decoder, Encoder] {
   }
 
   override def doCall(req: Request): Future[String] = {
-    val json = req.args.mapValues(v => v.drop(1).dropRight(1)).asJson.spaces2
-    println(s"Sending json ${json}")
+    val json = req.args
+      .map {
+        case (k, valueAsJson) => s""""$k" : $valueAsJson"""
+      }
+      .mkString("{", ",", "}")
+    println(s"Request as json: ${json}")
     Ajax
       .post("/api/" + req.path.mkString("/"), json)
-      .map { response =>
-        println(response.getAllResponseHeaders())
-        println(response.getResponseHeader("Cookie"))
-        println(response.getResponseHeader("Set-Cookie"))
-        response
-      }
       .map(_.responseText)
       .map { r =>
         println(r)

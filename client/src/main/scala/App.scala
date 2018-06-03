@@ -34,7 +34,7 @@ object AppRoutes {
 @react class App extends Component {
   type Props = RouteProps
 
-  case class State(drawerOpen: Boolean = false, token: Option[SessionToken] = None)
+  case class State(drawerOpen: Boolean = false, userInfo: Option[UserInfo] = None)
 
   override def initialState: State = State()
 
@@ -49,11 +49,18 @@ object AppRoutes {
   val getWishes: () => Future[WishList] = () => AuthClient[AuthedApi[Future]].getWishes().call()
   val getMe: () => Future[UserInfo]     = () => AuthClient[AuthedApi[Future]].me().call()
 
-  private def defaultPath: Breakpoint = if(AuthClient.isLoggedIn) AppRoutes.editWishesPath else AppRoutes.loginPath
+  private def defaultPath: Breakpoint =
+    if (AuthClient.isLoggedIn) AppRoutes.editWishesPath else AppRoutes.loginPath
 
-  def render(): ReactElement = {
+  def parseSecretToken(search: String): Option[String] = {
+    val (key, value) = search.drop(1).span(_ != '=')
+    println(s"Parse: ${key} ${value}")
+    if (key == "sharedURL") Option(value.drop(1).mkString) else None
+  }
+
+  def render(): ReactElement =
     MuiThemeProvider(theme = daftTheme)(
-      AppBar(position = static, color = color.primary)(
+      AppBar(position = sticky, color = color.primary)(
         Toolbar(
           IconButton(color = color.inherit)(
             icons.Menu()
@@ -62,13 +69,22 @@ object AppRoutes {
             props.location.pathname.toString.drop(1).mkString)
         )
       ),
-      div(style := js.Dynamic.literal(paddingTop = "2em") )(
-        Route(exact = true, path = AppRoutes.loginPath, render = (rp: RouteProps) => LoginPage(push = this.props.history.push.asInstanceOf[js.Function1[String,Unit]])),
+      div(style := js.Dynamic.literal(paddingTop = "2em"))(
+        Route(exact = true,
+              path = AppRoutes.loginPath,
+              render = (rp: RouteProps) =>
+                LoginPage(push = this.props.history.push.asInstanceOf[js.Function1[String, Unit]])),
         Route(exact = true,
               path = AppRoutes.editWishesPath,
               render = (_: RouteProps) => EditPage(getMe = getMe, getWishes = getWishes)),
-        Route(path = "/", render = _ => Redirect(to = defaultPath, from = "/"))
+        Route(path = "/", render = rp => sharedPageOrDefault(rp))
       )
     )
+
+  private def sharedPageOrDefault(rp: RouteProps): ReactElement = {
+    println(s"ROUTE PROPS: ${rp.location.search}")
+
+    parseSecretToken(rp.location.search.toString)
+      .fold[ReactElement](Redirect(to = defaultPath, from = "/"))(tkn => SharedPage(tkn))
   }
 }

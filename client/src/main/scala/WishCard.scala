@@ -1,10 +1,14 @@
 import com.lambdaminute.slinkywrappers.materialui.Direction.{column, row}
 import com.lambdaminute.slinkywrappers.materialui.Sizes.{
-  `12` => allPart,
-  `5` => imagePart,
-  `7` => textPart
+  `12` => twelve,
+  `6` => six,
+  `5` => five,
+  `2` => two,
+  `3` => three,
+  `7` => seven
 }
 import com.lambdaminute.slinkywrappers.materialui._
+import com.lambdaminute.slinkywrappers.materialui.size
 import com.lambdaminute.slinkywrappers.materialui.align.justify
 import com.lambdaminute.slinkywrappers.materialui.cards._
 import com.lambdaminute.wishr.model.Wish
@@ -20,27 +24,59 @@ import org.scalajs.dom.raw.{HTMLFormElement, HTMLInputElement}
 import scala.scalajs.js
 import scala.scalajs.js.JSON
 
-@react class WishCard extends StatelessComponent {
+@react class WishCard extends Component {
 
+  case class State(imageUrl: String)
   case class Props(wish: Wish,
                    isEditing: Boolean,
                    startEditing: EventHandler,
                    saveChanges: Wish => Unit,
-                   discardChanges: EventHandler)
+                   onClickDelete: () => Unit,
+                   discardChanges: EventHandler,
+                   noButtons: Boolean = false)
+
+  override def initialState: State = State(props.wish.image.mkString)
+
+  private val buttonSize = size.small
+
+  private val allPartDesktop = twelve
+  private val allPartMobile  = twelve
+
+  private val mobileImageSize  = five
+  private val desktopImageSize = five
+
+  private val mobileTextSize  = seven
+  private val desktopTextSize = seven
 
   override def render(): ReactElement =
     if (props.isEditing) form(onSubmit := handleSubmit)(card) else card
 
   private def editingCardActions: ReactElement =
     Fragment(
-      Button(color = color.primary, variant = variant.raised)(`type` := "submit")("Save changes"),
-      Button(color = color.secondary, onClick = props.discardChanges)("Discard changes")
+      Button(color = color.primary, variant = variant.raised, size = buttonSize)(
+        `type` := "submit")("Save changes"),
+      Button(color = color.secondary, onClick = props.discardChanges, size = buttonSize)(
+        "Discard changes")
     )
 
-  private def viewingCardActions: ReactElement =
-    Button(onClick = props.startEditing, variant = variant.raised, color = color.primary)(
+  private def onClickDelete: EventHandler = (_, _) => props.onClickDelete()
+
+  private def viewingCardActions: ReactElement = Fragment(
+    Button(onClick = props.startEditing,
+           variant = variant.raised,
+           color = color.primary,
+           className = "editButtons",
+           size = buttonSize)(
       icons.Edit()
+    ),
+    Button(onClick = onClickDelete,
+           variant = variant.raised,
+           color = color.default,
+           className = "editButtons",
+           size = buttonSize)(
+      icons.Delete()
     )
+  )
 
   private val handleSubmit: js.Function1[Event, Unit] = { event =>
     event.preventDefault()
@@ -64,41 +100,60 @@ import scala.scalajs.js.JSON
 
   private def card: ReactElement =
     Card(className = "wishCardContainer")(
-      Grid(container = true, direction = row, xs = allPart)(
-        if (props.isEditing) editingWishText else wishText,
+      Grid(container = true, direction = row /*, xs = allPartMobile, lg = allPartDesktop*/ )(
+        Grid(item = true, xs = mobileTextSize, lg = desktopTextSize)(
+          if (props.isEditing) editingWishText else wishText),
         image,
-      ),
+      )
     )
+
+  private def onUrlChange: js.Function1[js.Object, Unit] = { (event) =>
+    val inputValue = event.asInstanceOf[Event].target.asInstanceOf[HTMLInputElement].value
+    println(inputValue)
+    this.setState(_.copy(imageUrl = inputValue))
+  }
 
   private def image =
-    Grid(container = true, xs = imagePart, className = "imageGridItem", direction = column)(
-      if (props.isEditing)
-        Grid(item = true)(
-          TextField(label = "Image URL",
-                    name = imageFieldName,
-                    defaultValue = props.wish.image.mkString))
-      else
-        Grid(item = true)(),
-      Grid(item = true)(img(src := props.wish.image.mkString, className := "wishCardImg"))
+    Grid(item = true, xs = mobileImageSize, lg = desktopImageSize)(
+      Grid(container = true, className = "imageGridItem", direction = column)(
+        if (props.isEditing)
+          Grid(item = true)(
+            TextField(label = "Image URL",
+                      name = imageFieldName,
+                      defaultValue = props.wish.image.mkString,
+                      onChange = onUrlChange))
+        else
+          Grid(item = true)(),
+        Grid(item = true)(imageElement)
+      )
     )
 
+  def imageElement: ReactElement =
+    if (state.imageUrl.nonEmpty) img(src := state.imageUrl, className := "wishCardImg")
+    else icons.CardGiftcard(className := "wishCardImg")
+
   private def wishText: ReactElement =
-    Grid(container = true, direction = column, justify = spaceBetween, xs = textPart)(
+    Grid(container = true, direction = column, justify = spaceBetween)(
       Grid(item = true)(Typography(variant = textvariant.title)(props.wish.heading),
                         Typography(props.wish.desc)),
-      Grid(item = true)(viewingCardActions)
+      if (props.noButtons) Fragment() else Grid(item = true)(viewingCardActions)
     )
 
   private def editingWishText: ReactElement =
-    Grid(container = true, direction = column, justify = spaceBetween, xs = textPart)(
-      Grid(item = true)(
-        TextField(label = "Title",autoFocus = true, name = titleFieldName, defaultValue = props.wish.heading),
-        br(),
-        TextField(label = "Description",
-                  name = descriptionFieldName,
-                  multiline = true,
-                  defaultValue = props.wish.desc),
-      ),
-      Grid(item = true)(editingCardActions)
+    Grid(item = true, xs = mobileTextSize, lg = desktopTextSize)(
+      Grid(container = true, direction = column, justify = spaceBetween)(
+        Grid(item = true)(
+          TextField(label = "Title",
+                    autoFocus = true,
+                    name = titleFieldName,
+                    defaultValue = props.wish.heading),
+          br(),
+          TextField(label = "Description",
+                    name = descriptionFieldName,
+                    multiline = true,
+                    defaultValue = props.wish.desc),
+        ),
+        Grid(item = true)(editingCardActions)
+      )
     )
 }

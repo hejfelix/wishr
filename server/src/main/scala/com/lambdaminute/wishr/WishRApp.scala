@@ -6,7 +6,9 @@ import cats.implicits._
 import ciris._
 import com.lambdaminute.WishRService
 import com.lambdaminute.wishr.config.{ApplicationConf, DBConfig}
-import com.lambdaminute.wishr.persistence.DoobiePersistence
+import com.lambdaminute.wishr.model.tags._
+import com.lambdaminute.wishr.model.{UnauthedApi, UserInfo, Wish}
+import com.lambdaminute.wishr.persistence.{DoobiePersistence, Persistence}
 import fs2.StreamApp.ExitCode
 import fs2.{StreamApp, _}
 import org.http4s.server.blaze.BlazeBuilder
@@ -55,7 +57,8 @@ abstract class WishRApp extends StreamApp[IO] {
         IO.pure(
           new WishRService[IO](applicationConf,
                                persistence,
-                               token => new Authed(token, persistence))))
+                               token => new Authed(token, persistence),
+                               new Unauthed(persistence))))
       result <- BlazeBuilder[IO]
         .bindHttp(port = 9000, host = "0.0.0.0")
         .mountService(wishrService.unauthedService, "/api/")

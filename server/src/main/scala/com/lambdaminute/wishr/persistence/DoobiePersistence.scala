@@ -6,7 +6,7 @@ import cats.implicits._
 import com.github.t3hnar.bcrypt._
 import com.lambdaminute.wishr.config.DBConfig
 import com.lambdaminute.wishr.model.tags.{Password => WishrPassword, _}
-import com.lambdaminute.wishr.model.{Stats, WishEntry}
+import com.lambdaminute.wishr.model.{Stats, Wish, WishEntry}
 import com.lambdaminute.wishr.persistence
 import doobie.free.connection.ConnectionIO
 import doobie.implicits._
@@ -204,7 +204,7 @@ class DoobiePersistence[F[_]](dbconf: DBConfig, tokenTimeout: FiniteDuration)(
 
   override def getEntriesFor(email: Email): PersistenceResponse[List[WishEntry]] =
     EitherT(
-      sql"SELECT email, heading, description, imageURL, id, index FROM wishes WHERE email=${email.toString} AND granted=FALSE"
+      sql"SELECT email, heading, description, imageURL, index, id FROM wishes WHERE email=${email.toString} AND granted=FALSE"
         .query[WishEntry]
         .to[List]
         .attemptSql
@@ -286,12 +286,12 @@ class DoobiePersistence[F[_]](dbconf: DBConfig, tokenTimeout: FiniteDuration)(
       }
   )
 
-  override def updateWish(wishEntry: WishEntry): PersistenceResponse[Unit] =
+  override def updateWish(wishEntry: Wish): PersistenceResponse[Unit] =
     EitherT {
       val w = wishEntry
       sql"""
 
-          UPDATE wishes SET email=${w.email}, heading=${w.heading}, description=${w.desc}, imageURL=${w.image}, index=${w.index}
+          UPDATE wishes SET  heading=${w.heading}, description=${w.desc}, imageURL=${w.image}
             WHERE id=${w.id}
 
           """.update.run.transact(xa).map {
@@ -300,12 +300,15 @@ class DoobiePersistence[F[_]](dbconf: DBConfig, tokenTimeout: FiniteDuration)(
       }
     }
 
-  override def swapWishIndices(i: WishId, j: WishId): PersistenceResponse[(Int, Int)] = ???
+  override def swapWishIndices(i: WishId, j: WishId): PersistenceResponse[(Int, Int)] = {
+    println("WHAT IS GOING ON????")
+    ???
+  }
 
   override def getEntriesForSecret(secretURL: SecretUrl): PersistenceResponse[List[WishEntry]] =
     EitherT(sql"""
 
-          SELECT users.email, heading, description, imageURL, index FROM users, wishes
+          SELECT users.email, heading, description, imageURL, index, id FROM users, wishes
             WHERE secretURL=${secretURL.toString} AND users.email=wishes.email
 
           """.query[WishEntry].to[List].transact(xa).map(Right.apply))
@@ -313,16 +316,28 @@ class DoobiePersistence[F[_]](dbconf: DBConfig, tokenTimeout: FiniteDuration)(
   override def createWish(email: Email,
                           heading: String,
                           descr: String,
-                          imageUrl: Option[String]): PersistenceResponse[WishId] =
-    EitherT(
-      sql"""
+                          imageUrl: Option[String]): PersistenceResponse[WishId] = {
+    val query: fs2.Stream[F, Int] = sql"""
 
       INSERT INTO wishes (email, heading, description, imageurl, index)
         VALUES (${email.toString}, ${heading.toString}, ${descr.toString}, ${imageUrl.mkString}, 0) RETURNING id
 
-        """.update.run
-        .transact(xa)
+        """.update
+      .withGeneratedKeys[Int]("id")
+      .transact(xa)
+
+    EitherT(
+      query.compile.foldMonoid
         .map(_.asWishId)
         .map(Right.apply)
     )
+  }
+
+  override def deleteWish(id: WishId): PersistenceResponse[WishId] =
+    EitherT(sql"""
+      
+      DELETE FROM wishes WHERE id=${id.toInt}
+      
+      """.update.run.transact(xa).map(_ => id.asRight[String]))
+
 }

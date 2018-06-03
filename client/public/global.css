@@ -7,24 +7,37 @@ body {
 }
 
 .card {
-    min-width: 20em;
-    max-width: 30em;
+    /*min-width: 20em;*/
+    /*max-width: 30em;*/
 }
 
 .wishCardImg {
-    max-height: 15em;
-    max-width: 20em;
+    width:100% !important;
+}
+
+.modal {
+    position: absolute;
+    top: 50%;
+    left: 40%;
 }
 
 .wishCardContainer {
     display: flex;
-    min-height: 16em;
-    width: 44em;
     padding: 2em;
 }
 
 .imageGridItem {
     text-align: center;
+}
+
+.addWishButton {
+    position: fixed !important;
+    top: 12%;
+    left: 1em;
+}
+
+.editButtons {
+    margin: 0.6em !important;
 }
 
 .cardDiv {

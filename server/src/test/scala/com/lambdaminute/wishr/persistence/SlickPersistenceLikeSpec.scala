@@ -28,12 +28,6 @@ import scala.util.Random
 //  Await.result(db.run(dbio.withPinnedSession), 10.minutes)
 //}
 
-case object MockEncryption extends Encryption {
-  override def newToken                              = ???
-  override def hash(s: String)                       = ???
-  override def isHashedAs(str: String, hash: String) = ???
-}
-
 class SlickPersistenceLikeSpec extends AsyncWordSpec with Matchers with EitherValues {
 
 //  private val rnd = new Random(1337)

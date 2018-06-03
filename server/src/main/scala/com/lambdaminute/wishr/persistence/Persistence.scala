@@ -44,7 +44,7 @@ trait Persistence[F[_], Error] {
   /*
       Wishes stuff
    */
-  def updateWish(wishEntry: WishEntry): PersistenceResponse[Unit]
+  def updateWish(wishEntry: Wish): PersistenceResponse[Unit]
 
   def swapWishIndices(i: WishId, j: WishId): PersistenceResponse[(Int, Int)]
 
@@ -62,4 +62,6 @@ trait Persistence[F[_], Error] {
                  imageUrl: Option[String]): PersistenceResponse[WishId]
 
   def grant(id: WishId): PersistenceResponse[Int]
+
+  def deleteWish(id: WishId): PersistenceResponse[WishId]
 }
