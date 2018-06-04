@@ -2,6 +2,8 @@ import com.lambdaminute.slinkywrappers.materialui.AlignContent.center
 import com.lambdaminute.slinkywrappers.materialui._
 import com.lambdaminute.slinkywrappers.materialui.align.justify
 import com.lambdaminute.slinkywrappers.materialui.cards._
+import com.lambdaminute.slinkywrappers.materialui.Sizes.{`3` => three}
+import com.lambdaminute.slinkywrappers.materialui.Sizes.{`11` => eleven}
 import com.lambdaminute.wishr.model._
 import com.lambdaminute.wishr.model.tags._
 import org.scalajs.dom.Event
@@ -31,7 +33,7 @@ import scala.util.{Failure, Success}
   def render(): ReactElement =
     div(
       Grid(container = true, justify = center, alignItems = center)(
-        Grid(item = true, xs = true)(
+        Grid(item = true, xs = eleven, lg = three)(
           Card(raised = true, className = "card")(
             Grid(container = true, justify = center, alignItems = center)(cardContent))
         ))

@@ -10,6 +10,7 @@ import com.lambdaminute.slinkywrappers.materialui.Sizes.{
 import com.lambdaminute.slinkywrappers.materialui._
 import com.lambdaminute.slinkywrappers.materialui.size
 import com.lambdaminute.slinkywrappers.materialui.align.justify
+import com.lambdaminute.slinkywrappers.materialui.AlignContent.stretch
 import com.lambdaminute.slinkywrappers.materialui.cards._
 import com.lambdaminute.wishr.model.Wish
 import slinky.core.{Component, StatelessComponent}
@@ -100,7 +101,9 @@ import scala.scalajs.js.JSON
 
   private def card: ReactElement =
     Card(className = "wishCardContainer")(
-      Grid(container = true, direction = row /*, xs = allPartMobile, lg = allPartDesktop*/ )(
+      Grid(container = true,
+           direction = row,
+           alignItems = stretch /*, xs = allPartMobile, lg = allPartDesktop*/ )(
         Grid(item = true, xs = mobileTextSize, lg = desktopTextSize)(
           if (props.isEditing) editingWishText else wishText),
         image,
@@ -130,10 +133,15 @@ import scala.scalajs.js.JSON
 
   def imageElement: ReactElement =
     if (state.imageUrl.nonEmpty) img(src := state.imageUrl, className := "wishCardImg")
-    else icons.CardGiftcard(className := "wishCardImg")
+    else
+      img(src := "https://imgplaceholder.com/600x400/eeeeee/333333/fa-image",
+          className := "wishCardImg")
 
   private def wishText: ReactElement =
-    Grid(container = true, direction = column, justify = spaceBetween)(
+    Grid(container = true,
+         direction = column,
+         justify = spaceBetween,
+         className = "wishTextContainer")(
       Grid(item = true)(Typography(variant = textvariant.title)(props.wish.heading),
                         Typography(props.wish.desc)),
       if (props.noButtons) Fragment() else Grid(item = true)(viewingCardActions)

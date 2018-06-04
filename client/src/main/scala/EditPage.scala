@@ -120,7 +120,10 @@ import slinky.core.facade.ReactElement
     state.wishes.map { w =>
       val startEditing: EventHandler = (_, _) => this.setState(_.copy(editingWishId = w.id))
 
-      Grid(item = true, xs = Layout.mobileCardWidth, lg = Layout.desktopCardWidth)
+      Grid(className = "wishCardItem",
+           item = true,
+           xs = Layout.mobileCardWidth,
+           lg = Layout.desktopCardWidth)
         .withKey(w.heading)(
           card(w, startEditing)
         )

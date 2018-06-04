@@ -44,6 +44,7 @@ object AuthClient extends autowire.Client[String, Decoder, Encoder] {
     println(s"Encoding r:${r}")
     r.asJson.spaces2
   }
+
   def read[Result: Decoder](p: String) = {
     println(s"Decoding ${p}")
     println(s"Decoding ${parse(p)}")

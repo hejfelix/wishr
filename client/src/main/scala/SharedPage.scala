@@ -38,9 +38,14 @@ import scala.util.{Failure, Success}
            direction = column,
            justify = center,
            spacing = sixteen,
-           alignItems = center)(state.wishes.map(w =>
-        Grid(item = true, xs = Layout.mobileCardWidth, lg = Layout.desktopCardWidth)
-          .withKey(w.heading)(card(w)))))
+           alignItems = center)(
+        state.wishes.map(
+          w =>
+            Grid(item = true,
+                 xs = Layout.mobileCardWidth,
+                 lg = Layout.desktopCardWidth,
+                 className = "wishCardItem")
+              .withKey(w.heading)(card(w)))))
 
   private def card(w: Wish): ReactElement =
     WishCard(
