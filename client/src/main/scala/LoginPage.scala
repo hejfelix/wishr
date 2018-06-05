@@ -21,7 +21,8 @@ import concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
 
 @react class LoginPage extends StatelessComponent {
-  case class Props(push: js.Function1[String, Unit])
+  case class Props(push: js.Function1[String, Unit], updateUserInfo: () => Unit)
+
   private val emailInputName    = "email"
   private val passwordInputName = "password"
 
@@ -53,6 +54,7 @@ import scala.util.{Failure, Success}
         println(s"Successfully logged in ${value}")
         AuthClient.setToken(value.sessionToken)
 
+        props.updateUserInfo()
         val location = js.Dynamic.literal(
           pathname = AppRoutes.editWishesPath,
           state = js.Dynamic.literal()

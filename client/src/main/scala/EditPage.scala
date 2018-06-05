@@ -21,6 +21,7 @@ import com.lambdaminute.wishr.model._
 import com.lambdaminute.wishr.model.tags._
 import io.circe.generic.auto._
 import slinky.core.facade.ReactElement
+
 @react class EditPage extends Component {
 
   case class State(wishes: List[Wish] = List.empty,
@@ -28,7 +29,9 @@ import slinky.core.facade.ReactElement
                    editingWishId: Int = -1,
                    intentToDeleteWish: Option[Int] = None)
 
-  case class Props(getWishes: () => Future[WishList], getMe: () => Future[UserInfo])
+  case class Props(getWishes: () => Future[WishList],
+                   getMe: () => Future[UserInfo],
+                   navigateToSharedUrl: () => Unit)
 
   override def initialState: State = State()
 
@@ -46,7 +49,7 @@ import slinky.core.facade.ReactElement
 
   def render(): ReactElement =
     div(
-      addButton,
+      buttons,
       ConfirmModal(
         onYes = deleteWish,
         onNo = () => this.setState(_.copy(intentToDeleteWish = None)),
@@ -76,6 +79,16 @@ import slinky.core.facade.ReactElement
            className = "addWishButton")(
       icons.Add()
     )
+
+  private val shareWishList: EventHandler = (_, _) => props.navigateToSharedUrl()
+
+  private def shareWishListButton: ReactElement =
+    Button(onClick = shareWishList, variant = variant.fab, color = color.secondary)(icons.Share())
+
+  private val buttons =
+    Grid(direction = Direction.column, spacing = sixteen, className = "editPageButtons")(
+      Grid(item = true)(addButton),
+      Grid(item = true)(shareWishListButton))
 
   private val saveChanges: Wish => Unit = w => {
     AuthClient[AuthedApi[Future]].updateWish(w).call().onComplete {

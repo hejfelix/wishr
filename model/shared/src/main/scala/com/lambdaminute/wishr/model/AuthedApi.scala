@@ -6,4 +6,5 @@ trait AuthedApi[F[_]] {
   def updateWish(wish: Wish): F[Unit]
   def deleteWish(wishId: Int): F[Unit]
   def newWish(): F[Wish]
+  def gravatarUrl(): F[String]
 }

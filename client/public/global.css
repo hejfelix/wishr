@@ -18,21 +18,21 @@ body {
 .modal {
     position: absolute;
     top: 50%;
-    left: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
 .wishCardContainer {
     display: flex;
-    padding: 2em;
+    padding: 2em 2em 0.35em 2em;
 }
 
 .imageGridItem {
     text-align: center;
 }
 
-.addWishButton {
+.editPageButtons {
     position: fixed !important;
-    top: 3em;
     left: 1em;
 }
 
@@ -56,4 +56,12 @@ body {
 
 .wishCardItem {
     width: 100%;
+}
+
+.appBarTitle {
+    flex: 1;
+}
+
+.searchButton {
+    height: 1em;
 }

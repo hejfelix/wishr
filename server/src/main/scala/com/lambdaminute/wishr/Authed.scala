@@ -8,6 +8,23 @@ import com.lambdaminute.wishr.persistence.Persistence
 
 class Authed(token: SessionToken, persistence: Persistence[IO, String]) extends AuthedApi[Id] {
 
+  def md5HashString(s: String): String = {
+    import java.security.MessageDigest
+    import java.math.BigInteger
+    val md           = MessageDigest.getInstance("MD5")
+    val digest       = md.digest(s.getBytes)
+    val bigInt       = new BigInteger(1, digest)
+    val hashedString = bigInt.toString(16)
+    Stream.continually("0").take(32 - hashedString.length).mkString + hashedString
+  }
+
+  override def gravatarUrl(): Id[String] =
+    persistence
+      .emailForSessionToken(token)
+      .map(email => s"https://s.gravatar.com/avatar/${md5HashString(email)}?d=identicon")
+      .fold(err => throw new Exception(err), identity)
+      .unsafeRunSync()
+
   override def me(): UserInfo =
     persistence
       .getUserInfo(token)
@@ -52,5 +69,4 @@ class Authed(token: SessionToken, persistence: Persistence[IO, String]) extends 
       .deleteWish(id.asWishId)
       .fold(err => throw new Exception(err), identity)
       .unsafeRunSync()
-
 }

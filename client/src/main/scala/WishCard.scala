@@ -1,17 +1,20 @@
 import com.lambdaminute.slinkywrappers.materialui.Direction.{column, row}
 import com.lambdaminute.slinkywrappers.materialui.Sizes.{
   `12` => twelve,
-  `6` => six,
-  `5` => five,
   `2` => two,
   `3` => three,
+  `5` => five,
+  `6` => six,
   `7` => seven
 }
 import com.lambdaminute.slinkywrappers.materialui._
 import com.lambdaminute.slinkywrappers.materialui.size
+import com.lambdaminute.slinkywrappers.materialui.Divider
+import com.lambdaminute.slinkywrappers.materialui.cards._
 import com.lambdaminute.slinkywrappers.materialui.align.justify
 import com.lambdaminute.slinkywrappers.materialui.AlignContent.stretch
-import com.lambdaminute.slinkywrappers.materialui.cards._
+import com.lambdaminute.slinkywrappers.materialui.AlignContent.center
+import com.lambdaminute.slinkywrappers.materialui.AlignContent.{`space-between` => spaceBetween}
 import com.lambdaminute.wishr.model.Wish
 import slinky.core.{Component, StatelessComponent}
 import slinky.core.annotations.react
@@ -23,7 +26,7 @@ import org.scalajs.dom.Event
 import org.scalajs.dom.raw.{HTMLFormElement, HTMLInputElement}
 
 import scala.scalajs.js
-import scala.scalajs.js.JSON
+import scala.scalajs.js.{JSON, URIUtils}
 
 @react class WishCard extends Component {
 
@@ -60,7 +63,34 @@ import scala.scalajs.js.JSON
         "Discard changes")
     )
 
+  private def onClickOpen(url: String): EventHandler =
+    (_, _) => org.scalajs.dom.window.open(URIUtils.encodeURI(url), "_blank")
+
+  private val searchButtonVariant = variant.fab
+  private val searchButtonSize    = size.small
+  private def searchButtons = Fragment(
+    IconButton(
+      onClick = onClickOpen(s"http://www.pricerunner.dk/search?q=${props.wish.heading}"),
+      color = color.default
+    )(img(src := "pricerunner.svg", className := "searchButton")),
+    IconButton(
+      onClick = onClickOpen(s"https://www.amazon.co.uk/s/?field-keywords=${props.wish.heading}"),
+      color = color.default
+    )(img(src := "amazon.svg", className := "searchButton")),
+    IconButton(onClick = onClickOpen(s"https://www.google.dk/#q=${props.wish.heading}&tbm=shop"),
+               color = color.default)(img(src := "google.svg", className := "searchButton"))
+  )
+
   private def onClickDelete: EventHandler = (_, _) => props.onClickDelete()
+
+  private def actions =
+    Grid(container = true, justify = spaceBetween, direction = Direction.row, alignItems = center)(
+      Grid(item = true)(
+        if (props.noButtons) Fragment()
+        else if (props.isEditing) editingCardActions
+        else viewingCardActions),
+      Grid(item = true)(searchButtons)
+    )
 
   private def viewingCardActions: ReactElement = Fragment(
     Button(onClick = props.startEditing,
@@ -101,12 +131,16 @@ import scala.scalajs.js.JSON
 
   private def card: ReactElement =
     Card(className = "wishCardContainer")(
-      Grid(container = true,
-           direction = row,
-           alignItems = stretch /*, xs = allPartMobile, lg = allPartDesktop*/ )(
-        Grid(item = true, xs = mobileTextSize, lg = desktopTextSize)(
-          if (props.isEditing) editingWishText else wishText),
-        image,
+      div(style := js.Dynamic.literal(width = "100%"))(
+        Grid(container = true,
+             direction = row,
+             alignItems = stretch /*, xs = allPartMobile, lg = allPartDesktop*/ )(
+          Grid(item = true, xs = mobileTextSize, lg = desktopTextSize)(
+            if (props.isEditing) editingWishText else wishText),
+          image,
+        ),
+        Divider(),
+        actions
       )
     )
 
@@ -143,8 +177,7 @@ import scala.scalajs.js.JSON
          justify = spaceBetween,
          className = "wishTextContainer")(
       Grid(item = true)(Typography(variant = textvariant.title)(props.wish.heading),
-                        Typography(props.wish.desc)),
-      if (props.noButtons) Fragment() else Grid(item = true)(viewingCardActions)
+                        Typography(props.wish.desc))
     )
 
   private def editingWishText: ReactElement =
@@ -160,8 +193,7 @@ import scala.scalajs.js.JSON
                     name = descriptionFieldName,
                     multiline = true,
                     defaultValue = props.wish.desc),
-        ),
-        Grid(item = true)(editingCardActions)
+        )
       )
     )
 }

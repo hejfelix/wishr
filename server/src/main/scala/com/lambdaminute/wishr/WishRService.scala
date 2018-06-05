@@ -83,6 +83,7 @@ class WishRService[F[_]](applicationConf: ApplicationConf,
       F.flatMap(request.as[Json]) { json =>
         println(s"Unauthed request to path ${path.toList}")
         val map = json.asObject.map(_.toMap.mapValues(_.spaces2)).get
+        println(json)
         println(map)
         val routedResult: Future[String] = MyServer.route[UnauthedApi](unauthed)(
           autowire.Core.Request(path.toList, map)

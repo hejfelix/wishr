@@ -34,7 +34,10 @@ object AppRoutes {
 @react class App extends Component {
   type Props = RouteProps
 
-  case class State(drawerOpen: Boolean = false, userInfo: Option[UserInfo] = None)
+  case class State(drawerOpen: Boolean = false,
+                   userInfo: Option[UserInfo] = None,
+                   gravatarUrl: String = "",
+                   loggedIn: Boolean = false)
 
   override def initialState: State = State()
 
@@ -44,10 +47,26 @@ object AppRoutes {
     }
   }
 
+  private val setAsLoggedIn: js.Function = () => this.setState(_.copy(loggedIn = true))
+
   private val daftTheme: Theme = MaterialUi.createMuiTheme(themeSettings)
+
+  private val logOut = () => {
+    AuthClient.logOut
+    this.setState(_.copy(userInfo = None, gravatarUrl = ""))
+  }
 
   val getWishes: () => Future[WishList] = () => AuthClient[AuthedApi[Future]].getWishes().call()
   val getMe: () => Future[UserInfo]     = () => AuthClient[AuthedApi[Future]].me().call()
+  val getGravatarUrl: () => Future[String] = () =>
+    AuthClient[AuthedApi[Future]].gravatarUrl().call()
+
+  val navigateToSharedUrl: () => Unit = () =>
+    this.state.userInfo.foreach { info =>
+      this.props.history.push.asInstanceOf[js.Function1[String, Unit]](
+        s"/?sharedURL=${info.secretUrl}"
+      )
+  }
 
   private def defaultPath: Breakpoint =
     if (AuthClient.isLoggedIn) AppRoutes.editWishesPath else AppRoutes.loginPath
@@ -58,25 +77,58 @@ object AppRoutes {
     if (key == "sharedURL") Option(value.drop(1).mkString) else None
   }
 
+  private val updateUserInfo: () => Unit = () =>
+    if (AuthClient.isLoggedIn) {
+      for {
+        info        <- getMe()
+        gravatarUrl <- getGravatarUrl()
+      } {
+        this.setState(s => s.copy(userInfo = Option(info), gravatarUrl = gravatarUrl))
+      }
+  }
+
+  override def componentDidMount(): Unit = {
+    super.componentDidMount()
+    updateUserInfo()
+  }
+
+  private val setUserInfo = (info: UserInfo) => this.setState(_.copy(userInfo = Option(info)))
+
+  private val onMenuClick: EventHandler = (_, _) =>
+    this.setState(s => s.copy(drawerOpen = !s.drawerOpen))
+
+  private val onDrawerClose: () => Unit = () => this.setState(_.copy(drawerOpen = false))
+
   def render(): ReactElement =
     MuiThemeProvider(theme = daftTheme)(
-      AppBar(position = sticky, color = color.primary)(
-        Toolbar(
-          IconButton(color = color.inherit)(
-            icons.Menu()
-          ),
-          Typography(variant = textvariant.title, color = textcolor.inherit)(
-            props.location.pathname.toString.drop(1).mkString)
-        )
-      ),
-      div(style := js.Dynamic.literal(paddingTop = "2em"))(
-        Route(exact = true,
-              path = AppRoutes.loginPath,
-              render = (rp: RouteProps) =>
-                LoginPage(push = this.props.history.push.asInstanceOf[js.Function1[String, Unit]])),
+      DrawerMenu(state.drawerOpen, logOut, onDrawerClose, state.userInfo.isDefined),
+      div(
+        AppBar(position = fixed, color = color.primary)(
+          Toolbar(
+            IconButton(color = color.inherit, onClick = onMenuClick)(
+              icons.Menu()
+            ),
+            Typography(
+              variant = textvariant.title,
+              color = textcolor.inherit,
+              className = "appBarTitle")(props.location.pathname.toString.drop(1).mkString),
+            Avatar(src = state.gravatarUrl)
+          )
+        )),
+      div(style := js.Dynamic.literal(paddingTop = "5em"))(
+        Route(
+          exact = true,
+          path = AppRoutes.loginPath,
+          render = (rp: RouteProps) =>
+            LoginPage(updateUserInfo = this.updateUserInfo,
+                      push = this.props.history.push.asInstanceOf[js.Function1[String, Unit]])
+        ),
         Route(exact = true,
               path = AppRoutes.editWishesPath,
-              render = (_: RouteProps) => EditPage(getMe = getMe, getWishes = getWishes)),
+              render = (_: RouteProps) =>
+                EditPage(getMe = getMe,
+                         getWishes = getWishes,
+                         navigateToSharedUrl = navigateToSharedUrl)),
         Route(path = "/", render = rp => sharedPageOrDefault(rp))
       )
     )

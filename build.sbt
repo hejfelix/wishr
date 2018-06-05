@@ -48,7 +48,7 @@ lazy val model =
 
 val circeVersion          = "0.9.0-M2"
 val slinkyVersion         = "0.4.2"
-val slinkyWrappersVersion = "0.1.1+4-578958f8+20180603-1537"
+val slinkyWrappersVersion = "0.1.1+5-4b1c4d5d+20180605-0943"
 val materialUiVersion     = "1.0.0-beta.43"
 
 lazy val client = (project in file("client"))
