@@ -34,7 +34,7 @@ class DoobiePersistence[F[_]](dbconf: DBConfig, tokenTimeout: FiniteDuration)(
 
   private val postgresTokenTimeout: PGInterval = new PGInterval(
     finiteDurationToPostGresInterval(tokenTimeout))
-  implicit val metainterval = Meta.other[PGInterval]("interval")
+  implicit val metainterzval = Meta.other[PGInterval](schemaH = "interval")
 //
 //  val createUsersTable: Update0 =
 //    sql"""
@@ -309,7 +309,7 @@ class DoobiePersistence[F[_]](dbconf: DBConfig, tokenTimeout: FiniteDuration)(
     EitherT(sql"""
 
           SELECT users.email, heading, description, imageURL, index, id FROM users, wishes
-            WHERE secretURL=${secretURL.toString} AND users.email=wishes.email
+            WHERE secretURL=${secretURL.toString} AND users.email=wishes.email AND granted=FALSE
 
           """.query[WishEntry].to[List].transact(xa).map(Right.apply))
 

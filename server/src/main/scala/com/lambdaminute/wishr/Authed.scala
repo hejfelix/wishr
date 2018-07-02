@@ -69,4 +69,10 @@ class Authed(token: SessionToken, persistence: Persistence[IO, String]) extends 
       .deleteWish(id.asWishId)
       .fold(err => throw new Exception(err), identity)
       .unsafeRunSync()
+
+  override def grantWish(wishId: Int): Id[Unit] =
+    persistence
+      .deleteWish(wishId.asWishId)
+      .fold(err => throw new Exception(err), identity)
+      .unsafeRunSync()
 }

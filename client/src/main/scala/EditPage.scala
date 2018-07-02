@@ -47,15 +47,42 @@ import slinky.core.facade.ReactElement
         }
     }
 
+  private def grantWish: () => Unit =
+    () =>
+      state.intentToDeleteWish.foreach { id =>
+        AuthClient[AuthedApi[Future]].grantWish(id).call().onComplete {
+          case Success(_) =>
+            this.setState(s =>
+              s.copy(wishes = s.wishes.filter(_.id != id), intentToDeleteWish = None))
+          case Failure(err) =>
+            System.err.println(s"Failed to grant wish ${id}...${err}")
+        }
+    }
+
+  private def modalChoices =
+    List(
+      ButtonChoice(label = "I got my wish",
+                   variant = variant.raised,
+                   color = color.primary,
+                   action = grantWish),
+      ButtonChoice(label = "I no longer want it",
+                   variant = variant.raised,
+                   color = color.secondary,
+                   action = deleteWish),
+      ButtonChoice(label = "Cancel",
+                   variant = variant.raised,
+                   color = color.default,
+                   action = () => this.setState(_.copy(intentToDeleteWish = None))),
+    )
+
   def render(): ReactElement =
     div(
       buttons,
-      ConfirmModal(
-        onYes = deleteWish,
-        onNo = () => this.setState(_.copy(intentToDeleteWish = None)),
-        open = state.intentToDeleteWish.isDefined,
-        title = "Are you sure you want to delete this wish?",
-        description = "This action cannot be undone"
+      GeneralModal(
+        options = modalChoices,
+        "Confirm",
+        "Please confirm deletion by selecting a reason below. This action cannot be undone",
+        open = state.intentToDeleteWish.isDefined
       ),
       Grid(container = true,
            direction = column,
@@ -72,10 +99,13 @@ import slinky.core.facade.ReactElement
     }
   }
 
+  private val buttonSize = size.small
+
   private def addButton: ReactElement =
     Button(onClick = addWish,
            variant = variant.fab,
            color = color.primary,
+           size = buttonSize,
            className = "addWishButton")(
       icons.Add()
     )
@@ -83,10 +113,13 @@ import slinky.core.facade.ReactElement
   private val shareWishList: EventHandler = (_, _) => props.navigateToSharedUrl()
 
   private def shareWishListButton: ReactElement =
-    Button(onClick = shareWishList, variant = variant.fab, color = color.secondary)(icons.Share())
+    Button(onClick = shareWishList,
+           size = buttonSize,
+           variant = variant.fab,
+           color = color.secondary)(icons.Share())
 
   private val buttons =
-    Grid(direction = Direction.column, spacing = sixteen, className = "editPageButtons")(
+    Grid(direction = Direction.row, spacing = sixteen, className = "editPageButtons")(
       Grid(item = true)(addButton),
       Grid(item = true)(shareWishListButton))
 

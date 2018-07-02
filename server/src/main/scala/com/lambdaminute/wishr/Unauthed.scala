@@ -13,9 +13,12 @@ class Unauthed(persistence: Persistence[IO, String]) extends UnauthedApi {
       .fold(err => throw new Exception(err), identity)
       .unsafeRunSync()
 
+  private def cleanEmail(email: String) =
+    email.trim.toLowerCase
+
   override def logIn(email: String, password: String): UserInfo =
     (for {
-      token  <- persistence.logIn(email.asEmail, password.asPassword)
+      token  <- persistence.logIn(cleanEmail(email).asEmail, password.asPassword)
       dbUser <- persistence.getUserInfo(token)
     } yield {
       UserInfo(dbUser.firstName, dbUser.lastName, dbUser.email, dbUser.secretUrl, token)
