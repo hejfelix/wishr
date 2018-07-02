@@ -13,6 +13,7 @@ import com.lambdaminute.slinkywrappers.materialui.Sizes.{`6` => six}
 import com.lambdaminute.slinkywrappers.materialui.Sizes.{`12` => twelve}
 import com.lambdaminute.slinkywrappers.materialui.Sizes.{`11` => eleven}
 import com.lambdaminute.slinkywrappers.materialui.Sizes.{`3` => three}
+import com.lambdaminute.slinkywrappers.materialui.Sizes.{`8` => eight}
 import com.lambdaminute.slinkywrappers.materialui.Direction._
 import com.lambdaminute.slinkywrappers.materialui.Sizes.{`16` => sixteen}
 import com.lambdaminute.slinkywrappers.materialui.Modal
@@ -119,9 +120,11 @@ import slinky.core.facade.ReactElement
            color = color.secondary)(icons.Share())
 
   private val buttons =
-    Grid(direction = Direction.row, spacing = sixteen, className = "editPageButtons")(
-      Grid(item = true)(addButton),
-      Grid(item = true)(shareWishListButton))
+    Grid(container = true,
+         direction = Direction.row,
+         spacing = eight,
+         className = "editPageButtons")(Grid(item = true)(addButton),
+                                        Grid(item = true)(shareWishListButton))
 
   private val saveChanges: Wish => Unit = w => {
     AuthClient[AuthedApi[Future]].updateWish(w).call().onComplete {

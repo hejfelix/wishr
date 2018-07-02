@@ -19,7 +19,7 @@ module.exports = {
         proxy: [
             {
                 context: ["/auth", "/api"],
-                target: "http://192.168.0.122:9000"
+                target: "http://127.0.0.1:9000"
             }
         ],
         historyApiFallback: true

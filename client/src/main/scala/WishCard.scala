@@ -5,7 +5,8 @@ import com.lambdaminute.slinkywrappers.materialui.Sizes.{
   `3` => three,
   `5` => five,
   `6` => six,
-  `7` => seven
+  `7` => seven,
+  `0` => zero
 }
 import com.lambdaminute.slinkywrappers.materialui._
 import com.lambdaminute.slinkywrappers.materialui.size
@@ -56,7 +57,7 @@ import scala.scalajs.js.{JSON, URIUtils}
     if (props.isEditing) form(onSubmit := handleSubmit)(card) else card
 
   private def editingCardActions: ReactElement =
-    Fragment(
+    Grid(item = true)(
       Button(color = color.primary, variant = variant.raised, size = buttonSize)(
         `type` := "submit")("Save changes"),
       Button(color = color.secondary, onClick = props.discardChanges, size = buttonSize)(
@@ -68,7 +69,7 @@ import scala.scalajs.js.{JSON, URIUtils}
 
   private val searchButtonVariant = variant.fab
   private val searchButtonSize    = size.small
-  private def searchButtons = Fragment(
+  private def searchButtons = Grid(container = true, direction = row)(
     IconButton(
       onClick = onClickOpen(s"http://www.pricerunner.dk/search?q=${props.wish.heading}"),
       color = color.default
@@ -92,22 +93,21 @@ import scala.scalajs.js.{JSON, URIUtils}
       Grid(item = true)(searchButtons)
     )
 
-  private def viewingCardActions: ReactElement = Fragment(
-    Button(onClick = props.startEditing,
-           variant = variant.raised,
-           color = color.primary,
-           className = "editButtons",
-           size = buttonSize)(
-      icons.Edit()
-    ),
-    Button(onClick = onClickDelete,
-           variant = variant.raised,
-           color = color.default,
-           className = "editButtons",
-           size = buttonSize)(
-      icons.Delete()
+  private def viewingCardActions: ReactElement =
+    Grid(container = true, direction = row, spacing = zero)(
+      Grid(item = true)(
+        Button(onClick = props.startEditing,
+               variant = variant.raised,
+               color = color.primary,
+               className = "editButtons",
+               size = buttonSize)(icons.Edit())),
+      Grid(item = true)(
+        Button(onClick = onClickDelete,
+               variant = variant.raised,
+               color = color.default,
+               className = "editButtons",
+               size = buttonSize)(icons.Delete()))
     )
-  )
 
   private val handleSubmit: js.Function1[Event, Unit] = { event =>
     event.preventDefault()

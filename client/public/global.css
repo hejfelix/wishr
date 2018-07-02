@@ -4,6 +4,7 @@
 
 body {
     margin: 0px;
+    padding-bottom: 5em;
 }
 
 .card {
@@ -22,11 +23,25 @@ body {
     transform: translate(-50%, -50%);
 }
 
-.wishCardContainer {
-    display: flex;
-    padding: 2em 2em 0.35em 2em;
+@media screen and (min-width: 1280px) /* Desktop */ {
+    .wishCardContainer {
+        display: flex;
+        padding-top: 2em;
+        padding-right: 2em;
+        padding-left: 2em;
+        padding-bottom: 0.35em;
+    }
 }
 
+@media screen and (max-width: 1280px) /* Desktop */ {
+    .wishCardContainer {
+        display: flex;
+        padding-top: 1em;
+        padding-right: .4em;
+        padding-left: .4em;
+        padding-bottom: 0.35em;
+    }
+}
 .imageGridItem {
     text-align: center;
 }
@@ -34,6 +49,8 @@ body {
 .editPageButtons {
     position: fixed !important;
     left: 1em;
+    bottom: 1em;
+    z-index:1000; //change your number as per elements lies on your page.
 }
 
 .editButtons {
@@ -64,4 +81,5 @@ body {
 
 .searchButton {
     height: 1em;
+    width: 1em;
 }
