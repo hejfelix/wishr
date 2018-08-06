@@ -59,7 +59,7 @@ lazy val client = (project in file("client"))
       "react"              -> "16.3.2",
       "react-dom"          -> "16.3.2",
       "react-proxy"        -> "1.1.8",
-      "@material-ui/core"        -> materialUiVersion,
+      "@material-ui/core"  -> materialUiVersion,
       "@material-ui/icons" -> "1.1.0",
       "react-router-dom"   -> "4.2.2"
     ),

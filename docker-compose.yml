@@ -1,0 +1,4 @@
+Wishr:
+  image: hejfelix/wishr
+  ports:
+  - "9000:9000"
