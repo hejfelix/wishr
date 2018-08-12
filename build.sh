@@ -5,4 +5,3 @@ set -e
 sbt --client "project server" pack
 sbt --client 'client/fastOptJS::webpack'
 
-docker build . -t hejfelix/wishr

@@ -40,10 +40,10 @@ class WishRService[F[_]](applicationConf: ApplicationConf,
                          unauthed: UnauthedApi)(implicit F: Effect[F], ec: ExecutionContext)
     extends Http4sDsl[F] {
 
-  def static(file: String, request: Request[F]): OptionT[F, Response[F]] = {
-    logger.info(s"Requested file: /static/${file}")
-    StaticFile.fromFile[F](new File(s"/static/$file"))
-  }
+  def static(staticPath: String, file: String, request: Request[F]): OptionT[F, Response[F]] = {
+    logger.info(s"Requested file: ${staticPath}${file}")
+    StaticFile.fromFile[F](new File(s"${staticPath}$file"))
+  }.orElse(StaticFile.fromFile[F](new File(s"${staticPath}index.html")))
 
   import org.log4s._
   private val logger = getLogger("BLOOP")
@@ -73,10 +73,10 @@ class WishRService[F[_]](applicationConf: ApplicationConf,
       }
   }
 
-  lazy val staticFilesService = HttpService[F] {
+  def staticFilesService(staticPath: String) = HttpService[F] {
     case request @ GET -> path =>
       println(request)
-      static(path.toList.mkString("/"), request).getOrElseF(NotFound())
+      static(staticPath, path.toList.mkString("/"), request).getOrElseF(NotFound())
   }
 
   lazy val retrieveUser: Kleisli[F, SessionToken, Either[String, User]] = Kleisli {
@@ -103,7 +103,8 @@ class WishRService[F[_]](applicationConf: ApplicationConf,
     val headersList = request.headers.toList
     println(headersList)
     println(headersList.find(_.name.toString == sessionTokenHeaderKey).map(_.value))
-    val token: Option[Header] = headersList.find(_.name.toString() == sessionTokenHeaderKey)
+    val token: Option[Header] =
+      headersList.find(_.name.toString.equalsIgnoreCase(sessionTokenHeaderKey))
     token
       .map(_.value.asSessionToken)
       .toRight("No session token found")

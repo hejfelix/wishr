@@ -14,7 +14,7 @@ import scala.util.{Failure, Success}
 // client-side implementation, and call-site
 object AuthClient extends autowire.Client[String, Decoder, Encoder] {
 
-  private val tokenCookieKey = "sessionToken"
+  private val tokenCookieKey = "sessiontoken"
 
   private def cookieMap: Map[String, String] =
     document.cookie
@@ -38,6 +38,7 @@ object AuthClient extends autowire.Client[String, Decoder, Encoder] {
   def setToken(sessionToken: SessionToken): Unit = {
     println(document.cookie)
     document.cookie = s"$tokenCookieKey=$sessionToken;"
+    println(document.cookie)
   }
 
   def write[Result: Encoder](r: Result) = {

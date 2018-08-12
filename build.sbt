@@ -49,7 +49,7 @@ lazy val model =
 val circeVersion          = "0.9.0-M2"
 val slinkyVersion         = "0.4.2"
 val slinkyWrappersVersion = "0.2.0"
-val materialUiVersion     = "1.2.0"
+val materialUiVersion     = "1.4.3"
 
 lazy val client = (project in file("client"))
   .enablePlugins(ScalaJSBundlerPlugin, ScalaJSPlugin)
@@ -60,8 +60,9 @@ lazy val client = (project in file("client"))
       "react-dom"          -> "16.3.2",
       "react-proxy"        -> "1.1.8",
       "@material-ui/core"  -> materialUiVersion,
-      "@material-ui/icons" -> "1.1.0",
-      "react-router-dom"   -> "4.2.2"
+      "@material-ui/icons" -> "2.0.1",
+      "react-router-dom"   -> "4.2.2",
+      "babel-runtime"      -> "6.26.0"
     ),
     (npmDevDependencies in Compile) ++= Seq(
       "file-loader"         -> "1.1.11",

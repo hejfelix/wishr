@@ -24,7 +24,8 @@ class DoobiePersistence[F[_]](dbconf: DBConfig, tokenTimeout: FiniteDuration)(
 
   val xa = Transactor.fromDriverManager[F](
     driver = "org.postgresql.Driver",
-    url = s"jdbc:postgresql:pg",
+    url =
+      s"jdbc:postgresql://${dbconf.url}?ssl=true&sslfactory=org.postgresql.ssl.NonValidatingFactory",
     user = dbconf.user,
     pass = dbconf.password
   )

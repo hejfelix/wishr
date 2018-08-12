@@ -8,34 +8,40 @@ import com.lambdaminute.wishr.persistence.DoobiePersistence
 import fs2.StreamApp.ExitCode
 import fs2.{StreamApp, _}
 import org.http4s.server.blaze.BlazeBuilder
-
+import cats.syntax.either._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 abstract class WishRApp extends StreamApp[IO] {
 
-  private def parseDbUrl(url: String): DBConfig = {
-    val driver      = url.takeWhile(_ != ':').mkString
-    val user        = url.split("//").drop(1).head.takeWhile(_ != ':').mkString
-    val password    = url.split(":").drop(2).head.takeWhile(_ != '@').mkString
-    val filteredUrl = url.split("@").drop(1).mkString.split("/").dropRight(1).mkString
-    println(filteredUrl)
-    DBConfig(user, password, filteredUrl, driver)
-  }
+  private def parseDbUrl(url: String): Either[ConfigErrors, DBConfig] =
+    try {
+      val colonSplit  = url.split(":")
+      val driver      = colonSplit(0)
+      val user        = colonSplit(1).filter(_ != '/')
+      val password    = colonSplit(2).takeWhile(_ != '@')
+      val filteredUrl = url.dropWhile(_ != '@').filter(_ != '@')
+      val dBConfig    = DBConfig(user, password, filteredUrl, driver)
+      println(dBConfig)
+      Either.right(dBConfig)
+    } catch {
+      case t: Throwable => Either.left(ConfigErrors.apply(ConfigError(t.getMessage)))
+    }
 
   def loadDbConf: Either[ConfigErrors, DBConfig] =
-    Right(
-      loadConfig(env[String]("DB_URL"))(parseDbUrl)
-        .getOrElse(
-          DBConfig(user = "pg",
-                   password = "password",
-                   url = "localhost:5432",
-                   driver = "jdbc:postgresql")))
+    loadConfig(env[Option[String]]("DATABASE_URL"))(
+      _.getOrElse("postgres://pg:password@localhost:5432"))
+      .flatMap(parseDbUrl)
 
   def loadAppConf: Either[ConfigErrors, ApplicationConf] =
     for {
-      dbConf <- loadDbConf
-    } yield ApplicationConf(dbConf)
+      dbConf     <- loadDbConf
+      staticPath <- loadStaticPath
+      port       <- loadConfig(env[Option[Int]]("PORT"))(_.getOrElse(9000))
+    } yield ApplicationConf(dbConf, staticPath, port)
+
+  def loadStaticPath: Either[ConfigErrors, String] =
+    loadConfig(env[Option[String]]("STATIC_PATH"))(_.getOrElse("/static/"))
 
   def loadConfOrExit: IO[ApplicationConf] =
     IO.pure(loadAppConf match {
@@ -57,10 +63,10 @@ abstract class WishRApp extends StreamApp[IO] {
                                token => new Authed(token, persistence),
                                new Unauthed(persistence))))
       result <- BlazeBuilder[IO]
-        .bindHttp(port = 9000, host = "0.0.0.0")
-        .mountService(wishrService.staticFilesService, "/")
+        .bindHttp(port = applicationConf.port, host = "0.0.0.0")
         .mountService(wishrService.unauthedService, "/api/")
         .mountService(wishrService.wrappedAuthedService, "/authed/api/")
+        .mountService(wishrService.staticFilesService(applicationConf.staticPath), "/")
         .serve
     } yield result
 

@@ -1,6 +1,6 @@
 package com.lambdaminute.wishr.config
 
-case class ApplicationConf(dbconf: DBConfig)
+case class ApplicationConf(dbconf: DBConfig, staticPath: String, port: Int)
 
 case class EmailSettings(smtp: String, port: Int, user: String, password: String, sender: String)
 
