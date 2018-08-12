@@ -14,7 +14,8 @@ import scala.util.{Failure, Success}
 // client-side implementation, and call-site
 object AuthClient extends autowire.Client[String, Decoder, Encoder] {
 
-  private val tokenCookieKey = "sessiontoken"
+  private val tokenCookieKey                     = "sessiontoken"
+  private var onError: Option[Throwable => Unit] = None
 
   private def cookieMap: Map[String, String] =
     document.cookie
@@ -46,6 +47,9 @@ object AuthClient extends autowire.Client[String, Decoder, Encoder] {
     r.asJson.spaces2
   }
 
+  def setErrorCallback(onError: Throwable => Unit): Unit =
+    AuthClient.onError = Option(onError)
+
   def read[Result: Decoder](p: String) = {
     println(s"Decoding ${p}")
     println(s"Decoding ${parse(p)}")
@@ -76,8 +80,10 @@ object AuthClient extends autowire.Client[String, Decoder, Encoder] {
           logOut
           window.location.href = AppRoutes.loginPath
         }
+        onError.foreach(_.apply(new Exception(s"${req.xhr.status}: ${req.xhr.responseText}")))
       case Failure(err) =>
         System.err.println(s"Request failed with unknown error: ${err.getMessage}")
+        onError.foreach(_.apply(err))
     }
 
     eventualResponse

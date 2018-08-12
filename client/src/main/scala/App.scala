@@ -7,7 +7,7 @@ import com.lambdaminute.wishr.model.AuthedApi
 import com.lambdaminute.wishr.model.tags.SessionToken
 import slinky.core._
 import slinky.core.annotations.react
-import slinky.core.facade.ReactElement
+import slinky.core.facade.{Fragment, ReactElement}
 import slinky.web.html._
 
 import scala.concurrent.Future
@@ -35,6 +35,7 @@ object AppRoutes {
   type Props = RouteProps
 
   case class State(drawerOpen: Boolean = false,
+                   errorMessage: Option[String] = None,
                    userInfo: Option[UserInfo] = None,
                    gravatarUrl: String = "",
                    loggedIn: Boolean = false)
@@ -89,6 +90,10 @@ object AppRoutes {
 
   override def componentDidMount(): Unit = {
     super.componentDidMount()
+    AuthClient.setErrorCallback(err => {
+      val errorText = err.getMessage
+      this.setState(_.copy(errorMessage = Option(errorText)))
+    })
     updateUserInfo()
   }
 
@@ -116,6 +121,7 @@ object AppRoutes {
           )
         )),
       div(style := js.Dynamic.literal(paddingTop = "5em"))(
+        state.errorMessage.fold(Fragment())(errMsg => Typography(color = textcolor.error)(errMsg)),
         Route(
           exact = true,
           path = AppRoutes.loginPath,
