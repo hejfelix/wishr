@@ -192,6 +192,7 @@ import slinky.core.facade.ReactElement
 
   override def componentDidMount(): Unit = {
     super.componentDidMount()
+    println("Edit mounted...")
     props.getWishes().onComplete {
       case Success(wishList) =>
         this.setState(_.copy(wishes = wishList.wishes, owner = Option(wishList.owner)))

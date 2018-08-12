@@ -41,6 +41,8 @@ trait Persistence[F[_], Error] {
 
   def getUserInfo(token: SessionToken): PersistenceResponse[DBUser]
 
+  def getUserInfoFromSecret(secretUrl: SecretUrl): PersistenceResponse[DBUser]
+
   /*
       Wishes stuff
    */

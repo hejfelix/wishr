@@ -6,7 +6,7 @@ import cats.Id
 import cats.data.{EitherT, Kleisli, OptionT}
 import cats.effect.Effect
 import cats.implicits._
-import com.lambdaminute.wishr.WishRApp
+import com.lambdaminute.wishr.{BadCredentialsError, WishRApp}
 import com.lambdaminute.wishr.config.ApplicationConf
 import com.lambdaminute.wishr.model.tags._
 import com.lambdaminute.wishr.model._
@@ -19,7 +19,16 @@ import org.http4s.dsl.Http4sDsl
 import org.http4s.headers._
 import org.http4s.server._
 import org.http4s.circe._
-import org.http4s.{AuthedService, Header, HttpService, MediaType, Request, Response, StaticFile}
+import org.http4s.{
+  AuthedService,
+  Header,
+  HttpService,
+  MediaType,
+  Request,
+  Response,
+  StaticFile,
+  Status
+}
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -66,10 +75,19 @@ class WishRService[F[_]](applicationConf: ApplicationConf,
         val map = json.asObject.map(_.toMap.mapValues(_.spaces2)).get
         println(json)
         println(map)
-        val routedResult: Future[String] = MyServer.route[UnauthedApi](unauthed)(
-          autowire.Core.Request(path.toList, map)
-        )
-        Ok(Await.result(routedResult, 10.seconds))
+        val routedResult: Future[F[Response[F]]] = MyServer
+          .route[UnauthedApi](unauthed)(
+            autowire.Core.Request(path.toList, map)
+          )
+          .map { x =>
+            Ok(x)
+          }
+          .recover {
+            case bad: BadCredentialsError => Forbidden(bad.message)
+            case err: Throwable           => InternalServerError(err.getMessage)
+          }
+        Await.result(routedResult, 15.seconds)
+
       }
   }
 

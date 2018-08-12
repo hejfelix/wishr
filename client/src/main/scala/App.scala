@@ -18,6 +18,7 @@ import autowire._
 import com.lambdaminute.wishr.model.tags._
 import com.lambdaminute.wishr.model._
 import io.circe.generic.auto._
+import org.scalajs.dom.ext.AjaxException
 
 import concurrent.ExecutionContext.Implicits.global
 import scala.scalajs.js.JSON
@@ -90,10 +91,13 @@ object AppRoutes {
 
   override def componentDidMount(): Unit = {
     super.componentDidMount()
-    AuthClient.setErrorCallback(err => {
-      val errorText = err.getMessage
+    def onError(ajaxException: AjaxException) = {
+      println(s"Setting error text: ${ajaxException.getMessage}")
+      val errorText = s"ERROR ${ajaxException.xhr.status}: ${ajaxException.xhr.responseText}"
       this.setState(_.copy(errorMessage = Option(errorText)))
-    })
+    }
+    AuthClient.setErrorCallback(onError _)
+    Client.setErrorCallback(onError _)
     updateUserInfo()
   }
 

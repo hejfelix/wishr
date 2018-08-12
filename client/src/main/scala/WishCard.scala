@@ -1,12 +1,12 @@
 import com.lambdaminute.slinkywrappers.materialui.Direction.{column, row}
 import com.lambdaminute.slinkywrappers.materialui.Sizes.{
+  `0` => zero,
   `12` => twelve,
   `2` => two,
   `3` => three,
   `5` => five,
   `6` => six,
-  `7` => seven,
-  `0` => zero
+  `7` => seven
 }
 import com.lambdaminute.slinkywrappers.materialui._
 import com.lambdaminute.slinkywrappers.materialui.size
@@ -27,6 +27,7 @@ import org.scalajs.dom.Event
 import org.scalajs.dom.raw.{HTMLFormElement, HTMLInputElement}
 
 import scala.scalajs.js
+import scala.scalajs.js.URIUtils.encodeURI
 import scala.scalajs.js.{JSON, URIUtils}
 
 @react class WishCard extends Component {
@@ -65,20 +66,22 @@ import scala.scalajs.js.{JSON, URIUtils}
     )
 
   private def onClickOpen(url: String): EventHandler =
-    (_, _) => org.scalajs.dom.window.open(URIUtils.encodeURI(url), "_blank")
+    (_, _) => org.scalajs.dom.window.open(encodeURI(url), "_blank")
 
   private val searchButtonVariant = variant.fab
   private val searchButtonSize    = size.small
   private def searchButtons = Grid(container = true, direction = row)(
     IconButton(
-      onClick = onClickOpen(s"http://www.pricerunner.dk/search?q=${props.wish.heading}"),
+      onClick = onClickOpen(s"http://www.pricerunner.dk/search?q=${encodeURI(props.wish.heading)}"),
       color = color.default
     )(img(src := "pricerunner.svg", className := "searchButton")),
     IconButton(
-      onClick = onClickOpen(s"https://www.amazon.co.uk/s/?field-keywords=${props.wish.heading}"),
+      onClick =
+        onClickOpen(s"https://www.amazon.co.uk/s/?field-keywords=${encodeURI(props.wish.heading)}"),
       color = color.default
     )(img(src := "amazon.svg", className := "searchButton")),
-    IconButton(onClick = onClickOpen(s"https://www.google.dk/#q=${props.wish.heading}&tbm=shop"),
+    IconButton(onClick =
+                 onClickOpen(s"https://www.google.dk/#q=${encodeURI(props.wish.heading)}&tbm=shop"),
                color = color.default)(img(src := "google.svg", className := "searchButton"))
   )
 

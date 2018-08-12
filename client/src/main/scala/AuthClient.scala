@@ -12,22 +12,22 @@ import org.scalajs.dom.{document, window}
 
 import scala.util.{Failure, Success}
 // client-side implementation, and call-site
-object AuthClient extends autowire.Client[String, Decoder, Encoder] {
+object AuthClient extends autowire.Client[String, Decoder, Encoder] with ClientErrorCallback {
 
-  private val tokenCookieKey                     = "sessiontoken"
-  private var onError: Option[Throwable => Unit] = None
+  private val tokenCookieKey = "sessiontoken"
 
   private def cookieMap: Map[String, String] =
     document.cookie
       .split(";")
       .map { kvpstring =>
         val (key, value) = kvpstring.span(_ != '=')
-        key -> value.drop(1).mkString
+        key.trim -> value.drop(1).mkString.trim
       }
       .toMap
 
   private def token: Option[SessionToken] = {
     println(s"Getting token: ${document.cookie}")
+    println(cookieMap)
     cookieMap.get(tokenCookieKey).map(_.asSessionToken)
   }
 
@@ -47,9 +47,6 @@ object AuthClient extends autowire.Client[String, Decoder, Encoder] {
     r.asJson.spaces2
   }
 
-  def setErrorCallback(onError: Throwable => Unit): Unit =
-    AuthClient.onError = Option(onError)
-
   def read[Result: Decoder](p: String) = {
     println(s"Decoding ${p}")
     println(s"Decoding ${parse(p)}")
@@ -57,6 +54,7 @@ object AuthClient extends autowire.Client[String, Decoder, Encoder] {
     println(result)
     result.right.get
   }
+
   override def doCall(req: Request): Future[String] = {
     val json = req.args
       .map {
@@ -80,10 +78,9 @@ object AuthClient extends autowire.Client[String, Decoder, Encoder] {
           logOut
           window.location.href = AppRoutes.loginPath
         }
-        onError.foreach(_.apply(new Exception(s"${req.xhr.status}: ${req.xhr.responseText}")))
+        onError(req)
       case Failure(err) =>
         System.err.println(s"Request failed with unknown error: ${err.getMessage}")
-        onError.foreach(_.apply(err))
     }
 
     eventualResponse

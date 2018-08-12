@@ -105,6 +105,14 @@ class DoobiePersistence[F[_]](dbconf: DBConfig, tokenTimeout: FiniteDuration)(
 
           """.query[DBUser].unique.transact(xa).map(Either.right[String, DBUser]))
 
+  override def getUserInfoFromSecret(token: SecretUrl): PersistenceResponse[persistence.DBUser] =
+    EitherT(sql"""
+
+          SELECT firstname, lastname, users.email, secreturl FROM users, secrets
+            WHERE secrets.email=users.email AND users.secreturl=${token.toString}
+
+          """.query[DBUser].unique.transact(xa).map(Either.right[String, DBUser]))
+
   override def logIn(email: Email, password: WishrPassword): PersistenceResponse[SessionToken] = {
 
     val selectEmail =
