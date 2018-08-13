@@ -62,6 +62,7 @@ lazy val client = (project in file("client"))
       "@material-ui/core"  -> materialUiVersion,
       "@material-ui/icons" -> "2.0.1",
       "react-router-dom"   -> "4.2.2",
+      "webpack-merge"      -> "4.1.2",
       "babel-runtime"      -> "6.26.0"
     ),
     (npmDevDependencies in Compile) ++= Seq(

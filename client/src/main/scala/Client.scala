@@ -10,7 +10,10 @@ import io.circe.parser._
 import io.circe.generic.auto._
 
 import scala.util.Failure
-object Client extends autowire.Client[String, Decoder, Encoder] with ClientErrorCallback {
+object Client
+    extends autowire.Client[String, Decoder, Encoder]
+    with ClientErrorCallback
+    with FutureRetry {
 
   def write[Result: Encoder](r: Result) = r.asJson.spaces2
 
@@ -28,8 +31,10 @@ object Client extends autowire.Client[String, Decoder, Encoder] with ClientError
       }
       .mkString("{", ",", "}")
     println(s"Request as json: ${json}")
-    val future = Ajax
-      .post("/api/" + req.path.mkString("/"), json)
+    val future = retry(Ajax
+                         .post("/api/" + req.path.mkString("/"), json),
+                       10,
+                       Option(req.path.mkString("/")))
       .map(_.responseText)
       .map { r =>
         println(r)

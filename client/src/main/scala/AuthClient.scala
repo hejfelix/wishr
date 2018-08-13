@@ -12,7 +12,10 @@ import org.scalajs.dom.{document, window}
 
 import scala.util.{Failure, Success}
 // client-side implementation, and call-site
-object AuthClient extends autowire.Client[String, Decoder, Encoder] with ClientErrorCallback {
+object AuthClient
+    extends autowire.Client[String, Decoder, Encoder]
+    with ClientErrorCallback
+    with FutureRetry {
 
   private val tokenCookieKey = "sessiontoken"
 
@@ -62,12 +65,15 @@ object AuthClient extends autowire.Client[String, Decoder, Encoder] with ClientE
       }
       .mkString("{", ",", "}")
     println(s"Request as json: ${json}")
-    val eventualResponse = Ajax
-      .post("/authed/api/" + req.path.mkString("/"),
-            json,
-            headers = Map(
-              "sessiontoken" -> token.get
-            ))
+    val path = "/authed/api/" + req.path.mkString("/")
+    val eventualResponse = retry(Ajax
+                                   .post(path,
+                                         json,
+                                         headers = Map(
+                                           "sessiontoken" -> token.get
+                                         )),
+                                 10,
+                                 Option(path))
 
     eventualResponse.onComplete {
       case Success(req) =>
