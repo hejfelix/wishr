@@ -3,5 +3,5 @@
 set -e
 
 sbt --client "project server" pack
-sbt --client 'client/fullOptJS::webpack'
+sbt 'client/fullOptJS::webpack'
 

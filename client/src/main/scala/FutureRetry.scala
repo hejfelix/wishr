@@ -1,21 +1,28 @@
+import org.scalajs.dom.XMLHttpRequest
 import org.scalajs.dom.ext.AjaxException
 
 import scala.concurrent.{ExecutionContext, Future}
 trait FutureRetry {
 
-  def retry[T](f: => Future[T], numRetries: Int = 10, path: Option[String] = None)(
-      implicit ec: ExecutionContext): Future[T] =
+  def retry(f: => Future[XMLHttpRequest], numRetries: Int = 10, path: Option[String] = None)(
+      implicit ec: ExecutionContext): Future[XMLHttpRequest] =
     numRetries match {
-      case 0 => Future.failed(new Exception("Request failed after 10 retries"))
+      case 0 =>
+        System.err.println("Request failed after 10 retries")
+        f
       case i =>
-        f.recoverWith {
-          case t: AjaxException =>
-            System.err.println(
-              s"Request failed: ${t.xhr.status}, ${t.xhr.responseText}. ${path.mkString}")
-            retry(f, numRetries - 1)
-          case t =>
-            System.err.println(s"Future failed with exception: ${t}, retrying ${numRetries}")
-            retry(f, numRetries - 1)
-        }
+        f.flatMap {
+            case req if req.status == 400 => throw new AjaxException(req)
+            case req                      => Future.successful(req)
+          }
+          .recoverWith {
+            case t: AjaxException =>
+              System.err.println(
+                s"Request failed: ${t.xhr.status}, ${t.xhr.responseText}. ${path.mkString}, retrying ${numRetries}")
+              retry(f, numRetries - 1, path)
+            case t =>
+              System.err.println(s"Future failed with exception: ${t}, retrying ${numRetries}")
+              retry(f, numRetries - 1, path)
+          }
     }
 }
