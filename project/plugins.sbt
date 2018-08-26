@@ -1,3 +1,4 @@
-addSbtPlugin("org.scala-js" % "sbt-scalajs" % "0.6.14")
-addSbtPlugin("org.xerial.sbt" % "sbt-pack" % "0.8.2")
-addSbtPlugin("com.typesafe.sbt" % "sbt-twirl" % "1.3.0")
+addSbtPlugin("org.scala-js"   % "sbt-scalajs"         % "0.6.22")
+addSbtPlugin("org.xerial.sbt" % "sbt-pack"            % "0.9.3")
+addSbtPlugin("io.spray"       % "sbt-revolver"        % "0.9.1")
+addSbtPlugin("ch.epfl.scala"  % "sbt-scalajs-bundler" % "0.13.1")

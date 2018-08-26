@@ -1,0 +1,85 @@
+.loginButton {
+    margin-top: 1em !important;
+}
+
+body {
+    margin: 0px;
+    padding-bottom: 5em;
+}
+
+.card {
+    /*min-width: 20em;*/
+    /*max-width: 30em;*/
+}
+
+.wishCardImg {
+    width:100% !important;
+}
+
+.modal {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+@media screen and (min-width: 1280px) /* Desktop */ {
+    .wishCardContainer {
+        display: flex;
+        padding-top: 2em;
+        padding-right: 2em;
+        padding-left: 2em;
+        padding-bottom: 0.35em;
+    }
+}
+
+@media screen and (max-width: 1280px) /* Desktop */ {
+    .wishCardContainer {
+        display: flex;
+        padding-top: 1em;
+        padding-right: .4em;
+        padding-left: .4em;
+        padding-bottom: 0.35em;
+    }
+}
+.imageGridItem {
+    text-align: center;
+}
+
+.editPageButtons {
+    position: fixed !important;
+    left: 1em;
+    bottom: 1em;
+    z-index:1000; //change your number as per elements lies on your page.
+}
+
+.editButtons {
+    margin: 0.6em !important;
+}
+
+.cardDiv {
+    display: flex;
+    flex-direction: column;
+}
+
+.title {
+    margin-bottom: 16px;
+    font-size: 14px;
+}
+
+.wishTextContainer {
+    height: 100%;
+}
+
+.wishCardItem {
+    width: 100%;
+}
+
+.appBarTitle {
+    flex: 1;
+}
+
+.searchButton {
+    height: 1em;
+    width: 1em;
+}

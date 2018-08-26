@@ -1,3 +1,6 @@
 package com.lambdaminute.wishr.model
 
-case class User(name: String, secret: String)
+import com.lambdaminute.wishr.model.tags.SessionToken
+import com.lambdaminute.wishr.model.tags.Email
+
+case class User(email: Email, secret: SessionToken)

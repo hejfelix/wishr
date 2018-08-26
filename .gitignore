@@ -7,3 +7,5 @@ assets/
 test-settings/
 
 yarn\.lock
+
+dumps/backup\.sql

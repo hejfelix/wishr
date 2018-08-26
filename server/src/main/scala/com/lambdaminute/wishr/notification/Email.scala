@@ -1,4 +1,5 @@
 package com.lambdaminute.wishr.notification
+
 import com.lambdaminute.wishr.config.EmailSettings
 import org.apache.commons.mail._
 
