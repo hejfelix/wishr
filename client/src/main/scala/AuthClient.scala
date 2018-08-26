@@ -72,7 +72,6 @@ object AuthClient
                                          headers = Map(
                                            "sessiontoken" -> token.get
                                          )),
-                                 10,
                                  Option(path))
 
     eventualResponse.onComplete {

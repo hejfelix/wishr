@@ -46,7 +46,6 @@ lazy val model =
       )
     )
 
-val circeVersion          = "0.9.0-M2"
 val slinkyVersion         = "0.4.3"
 val slinkyWrappersVersion = "0.2.0"
 val materialUiVersion     = "1.4.3"

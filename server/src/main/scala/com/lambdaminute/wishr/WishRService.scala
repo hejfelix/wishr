@@ -58,11 +58,8 @@ class WishRService[F[_]](applicationConf: ApplicationConf,
   private val logger = getLogger("BLOOP")
 
   private val loggingService: Kleisli[OptionT[F, ?], Request[F], Request[F]] = Kleisli { x =>
-    for {
-      body <- OptionT(x.bodyAsText.compile.foldSemigroup)
-      _ = logger.debug(s"${x.method}: ${x.pathInfo}, ${body}")
-      result <- OptionT.pure[F](x)
-    } yield result
+    logger.debug(s"${x.method}: ${x.pathInfo}")
+    OptionT.pure(x)
   }
 
   implicit val decoder = jsonOf[F, LoginRequest](F, LoginRequest.decoder)

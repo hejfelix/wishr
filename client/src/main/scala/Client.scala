@@ -33,7 +33,6 @@ object Client
     println(s"Request as json: ${json}")
     val future = retry(Ajax
                          .post("/api/" + req.path.mkString("/"), json),
-                       10,
                        Option(req.path.mkString("/")))
       .map(_.responseText)
       .map { r =>

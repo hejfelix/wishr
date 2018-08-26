@@ -1,6 +1,6 @@
 resolvers += Resolver.sonatypeRepo("snapshots")
 import Versions._
-val http4sVersion = "0.18.14"
+val http4sVersion = "0.18.16"
 
 val cirisVersion  = "0.4.1"
 val doobieVersion = "0.5.2"
