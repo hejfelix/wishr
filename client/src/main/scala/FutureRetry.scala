@@ -4,7 +4,7 @@ import org.scalajs.dom.ext.AjaxException
 import scala.concurrent.{ExecutionContext, Future}
 trait FutureRetry {
 
-  def retry(f: => Future[XMLHttpRequest], numRetries: Int = 10, path: Option[String] = None)(
+  def retry(f: => Future[XMLHttpRequest], numRetries: Int = 20, path: Option[String] = None)(
       implicit ec: ExecutionContext): Future[XMLHttpRequest] =
     numRetries match {
       case 0 =>

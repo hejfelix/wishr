@@ -47,7 +47,7 @@ lazy val model =
     )
 
 val circeVersion          = "0.9.0-M2"
-val slinkyVersion         = "0.4.2"
+val slinkyVersion         = "0.4.3"
 val slinkyWrappersVersion = "0.2.0"
 val materialUiVersion     = "1.4.3"
 
@@ -63,7 +63,8 @@ lazy val client = (project in file("client"))
       "@material-ui/icons" -> "2.0.1",
       "react-router-dom"   -> "4.2.2",
       "webpack-merge"      -> "4.1.2",
-      "babel-runtime"      -> "6.26.0"
+      "babel-runtime"      -> "6.26.0",
+      "linkifyjs"          -> "2.1.6"
     ),
     (npmDevDependencies in Compile) ++= Seq(
       "file-loader"         -> "1.1.11",

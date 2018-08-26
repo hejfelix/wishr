@@ -1,27 +1,23 @@
+import autowire._
 import com.lambdaminute.slinkywrappers.materialui.MaterialUi.colors._
 import com.lambdaminute.slinkywrappers.materialui.color.primary
-import com.lambdaminute.slinkywrappers.materialui.{Typography, icons, _}
 import com.lambdaminute.slinkywrappers.materialui.position._
+import com.lambdaminute.slinkywrappers.materialui.{Typography, icons, _}
 import com.lambdaminute.slinkywrappers.reactrouter._
-import com.lambdaminute.wishr.model.AuthedApi
-import com.lambdaminute.wishr.model.tags.SessionToken
+import com.lambdaminute.wishr.model.{AuthedApi, _}
+import org.scalajs.dom.ext.AjaxException
 import slinky.core._
 import slinky.core.annotations.react
 import slinky.core.facade.{Fragment, ReactElement}
 import slinky.web.html._
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.scalajs.js
 import scala.scalajs.js.Dynamic.literal
 import scala.scalajs.js.annotation.JSImport
-import autowire._
-import com.lambdaminute.wishr.model.tags._
-import com.lambdaminute.wishr.model._
-import io.circe.generic.auto._
-import org.scalajs.dom.ext.AjaxException
 
-import concurrent.ExecutionContext.Implicits.global
-import scala.scalajs.js.JSON
+import io.circe.generic.auto._
 
 @js.native
 @JSImport("@material-ui/icons/AccessAlarm", JSImport.Default)

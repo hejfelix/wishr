@@ -68,6 +68,8 @@ class WishRService[F[_]](applicationConf: ApplicationConf,
   implicit val decoder = jsonOf[F, LoginRequest](F, LoginRequest.decoder)
   implicit val encoder = jsonOf[F, UserInfo]
 
+  private val patience: FiniteDuration = 60.seconds
+
   val unauthedService: HttpService[F] = loggingService andThen HttpService[F] {
     case request @ POST -> path =>
       F.flatMap(request.as[Json]) { json =>
@@ -75,19 +77,21 @@ class WishRService[F[_]](applicationConf: ApplicationConf,
         val map = json.asObject.map(_.toMap.mapValues(_.spaces2)).get
         println(json)
         println(map)
-        val routedResult: Future[F[Response[F]]] = MyServer
-          .route[UnauthedApi](unauthed)(
-            autowire.Core.Request(path.toList, map)
-          )
-          .map { x =>
-            Ok(x)
-          }
-          .recover {
-            case bad: BadCredentialsError => Forbidden(bad.message)
-            case err: Throwable           => InternalServerError(err.getMessage)
-          }
-        Await.result(routedResult, 15.seconds)
-
+        val routedResult: F[Response[F]] =
+          F.fromFuture(
+              MyServer
+                .route[UnauthedApi](unauthed)(
+                  autowire.Core.Request(path.toList, map)
+                )
+                .map { x =>
+                  Ok(x)
+                }
+                .recover {
+                  case bad: BadCredentialsError => Forbidden(bad.message)
+                  case err: Throwable           => InternalServerError(err.getMessage)
+                })
+            .flatten
+        routedResult
       }
   }
 
@@ -137,10 +141,12 @@ class WishRService[F[_]](applicationConf: ApplicationConf,
         println(s"Authed request: $request")
         val map = json.asObject.map(_.toMap.mapValues(_.spaces2)).get
         println(map)
-        val routedResult: Future[String] = MyServer.route[AuthedApi[Id]](authedApi(user.secret))(
-          autowire.Core.Request(path.toList, map)
-        )
-        Ok(Await.result(routedResult, 10.seconds))
+
+        val routedResult: F[String] = F.fromFuture(
+          MyServer.route[AuthedApi[Id]](authedApi(user.secret))(
+            autowire.Core.Request(path.toList, map)
+          ))
+        routedResult.flatMap(r => Ok(r))
       })
   }
 

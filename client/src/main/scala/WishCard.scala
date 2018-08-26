@@ -23,6 +23,7 @@ import slinky.core.facade.{Fragment, ReactElement}
 import slinky.web.html._
 import slinky.web.svg.direction
 import AlignContent.{`space-between` => spaceBetween}
+import linkifyjs.Linkify
 import org.scalajs.dom.Event
 import org.scalajs.dom.raw.{HTMLFormElement, HTMLInputElement}
 
@@ -72,16 +73,14 @@ import scala.scalajs.js.{JSON, URIUtils}
   private val searchButtonSize    = size.small
   private def searchButtons = Grid(container = true, direction = row)(
     IconButton(
-      onClick = onClickOpen(s"http://www.pricerunner.dk/search?q=${encodeURI(props.wish.heading)}"),
+      onClick = onClickOpen(s"http://www.pricerunner.dk/search?q=${props.wish.heading}"),
       color = color.default
     )(img(src := "pricerunner.svg", className := "searchButton")),
     IconButton(
-      onClick =
-        onClickOpen(s"https://www.amazon.co.uk/s/?field-keywords=${encodeURI(props.wish.heading)}"),
+      onClick = onClickOpen(s"https://www.amazon.co.uk/s/?field-keywords=${props.wish.heading}"),
       color = color.default
     )(img(src := "amazon.svg", className := "searchButton")),
-    IconButton(onClick =
-                 onClickOpen(s"https://www.google.dk/#q=${encodeURI(props.wish.heading)}&tbm=shop"),
+    IconButton(onClick = onClickOpen(s"https://www.google.dk/#q=${props.wish.heading}&tbm=shop"),
                color = color.default)(img(src := "google.svg", className := "searchButton"))
   )
 
@@ -180,7 +179,7 @@ import scala.scalajs.js.{JSON, URIUtils}
          justify = spaceBetween,
          className = "wishTextContainer")(
       Grid(item = true)(Typography(variant = textvariant.title)(props.wish.heading),
-                        Typography(props.wish.desc))
+                        Linkify(tagName = "p")(props.wish.desc))
     )
 
   private def editingWishText: ReactElement =
