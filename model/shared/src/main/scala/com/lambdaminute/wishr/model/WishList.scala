@@ -1,6 +1,6 @@
 package com.lambdaminute.wishr.model
 
-import com.lambdaminute.wishr.model.tags.{Email, WishId}
+import com.lambdaminute.wishr.model.tags.Email
 
 case class WishList(owner: Email, wishes: List[Wish])
 

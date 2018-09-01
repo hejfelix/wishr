@@ -1,8 +1,6 @@
 package com.lambdaminute.wishr.model
 
-import com.lambdaminute.wishr.model.tags.{Email, SecretUrl}
-import com.lambdaminute.wishr.model.tags._
-import io.circe.Decoder.Result
+import com.lambdaminute.wishr.model.tags.{Email, SecretUrl, _}
 import io.circe.{Decoder, HCursor}
 
 object UserInfo {

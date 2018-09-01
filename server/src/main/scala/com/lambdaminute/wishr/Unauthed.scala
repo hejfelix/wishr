@@ -4,7 +4,6 @@ import cats.effect.IO
 import com.lambdaminute.wishr.model.tags._
 import com.lambdaminute.wishr.model.{UnauthedApi, UserInfo, Wish}
 import com.lambdaminute.wishr.persistence.Persistence
-import cats.syntax.either._
 
 case class BadCredentialsError(message: String) extends Throwable {
   override def getMessage: String = s"Bad credentials: ${message}"

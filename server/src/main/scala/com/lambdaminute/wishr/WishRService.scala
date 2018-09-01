@@ -3,11 +3,9 @@ package com.lambdaminute
 import java.io.File
 
 import cats.Id
-import cats.data.{EitherT, Kleisli, OptionT}
+import cats.data.{Kleisli, OptionT}
 import cats.effect.Effect
-import cats.implicits._
-import com.lambdaminute.wishr.{BadCredentialsError, WishRApp}
-import com.lambdaminute.wishr.config.ApplicationConf
+import com.lambdaminute.wishr.BadCredentialsError
 import com.lambdaminute.wishr.model.tags._
 import com.lambdaminute.wishr.model._
 import com.lambdaminute.wishr.persistence.Persistence
@@ -16,22 +14,11 @@ import io.circe.parser.decode
 import io.circe.syntax._
 import io.circe._
 import org.http4s.dsl.Http4sDsl
-import org.http4s.headers._
 import org.http4s.server._
 import org.http4s.circe._
-import org.http4s.{
-  AuthedService,
-  Header,
-  HttpService,
-  MediaType,
-  Request,
-  Response,
-  StaticFile,
-  Status
-}
-
-import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import org.http4s.{AuthedService, Header, HttpService, Request, Response, StaticFile}
+import cats.implicits._
+import scala.concurrent.ExecutionContext
 
 object MyServer extends autowire.Server[String, Decoder, Encoder] {
 
@@ -43,13 +30,12 @@ object MyServer extends autowire.Server[String, Decoder, Encoder] {
 
 }
 
-class WishRService[F[_]](applicationConf: ApplicationConf,
-                         persistence: Persistence[F, String],
+class WishRService[F[_]](persistence: Persistence[F, String],
                          authedApi: SessionToken => AuthedApi[Id],
                          unauthed: UnauthedApi)(implicit F: Effect[F], ec: ExecutionContext)
     extends Http4sDsl[F] {
 
-  def static(staticPath: String, file: String, request: Request[F]): OptionT[F, Response[F]] = {
+  def static(staticPath: String, file: String): OptionT[F, Response[F]] = {
     logger.info(s"Requested file: ${staticPath}${file}")
     StaticFile.fromFile[F](new File(s"${staticPath}$file"))
   }.orElse(StaticFile.fromFile[F](new File(s"${staticPath}index.html")))
@@ -64,8 +50,6 @@ class WishRService[F[_]](applicationConf: ApplicationConf,
 
   implicit val decoder = jsonOf[F, LoginRequest](F, LoginRequest.decoder)
   implicit val encoder = jsonOf[F, UserInfo]
-
-  private val patience: FiniteDuration = 60.seconds
 
   val unauthedService: HttpService[F] = loggingService andThen HttpService[F] {
     case request @ POST -> path =>
@@ -95,7 +79,7 @@ class WishRService[F[_]](applicationConf: ApplicationConf,
   def staticFilesService(staticPath: String) = HttpService[F] {
     case request @ GET -> path =>
       println(request)
-      static(staticPath, path.toList.mkString("/"), request).getOrElseF(NotFound())
+      static(staticPath, path.toList.mkString("/")).getOrElseF(NotFound())
   }
 
   lazy val retrieveUser: Kleisli[F, SessionToken, Either[String, User]] = Kleisli {

@@ -13,7 +13,6 @@ import doobie.implicits._
 import doobie.util.meta.Meta
 import doobie.util.transactor.Transactor
 import org.postgresql.util.PGInterval
-import doobie.postgres._
 
 import concurrent.duration._
 import scala.concurrent.duration.FiniteDuration

@@ -47,7 +47,8 @@ abstract class WishRApp extends StreamApp[IO] {
     IO.pure(loadAppConf match {
       case Right(appConf) => appConf
       case Left(errs) =>
-        sys.error(s"""Failed to load configuration:${errs.messages.mkString("\n")}""".stripMargin)
+        System.err.println(
+          s"""Failed to load configuration:${errs.messages.mkString("\n")}""".stripMargin)
         sys.exit(1)
     })
 
@@ -58,8 +59,7 @@ abstract class WishRApp extends StreamApp[IO] {
       persistence = new DoobiePersistence[IO](applicationConf.dbconf, 50.minutes)
       wishrService <- Stream.eval(
         IO.pure(
-          new WishRService[IO](applicationConf,
-                               persistence,
+          new WishRService[IO](persistence,
                                token => new Authed(token, persistence),
                                new Unauthed(persistence))))
       result <- BlazeBuilder[IO]

@@ -5,11 +5,11 @@ import cats.effect.Effect
 import com.lambdaminute.wishr.model._
 import com.lambdaminute.wishr.model.tags.{Email, _}
 
-trait Persistence[F[_], Error] {
+trait Persistence[F[_], PersistenceError] {
 
   implicit val F: Effect[F]
 
-  type PersistenceResponse[T] = EitherT[F, Error, T]
+  type PersistenceResponse[T] = EitherT[F, PersistenceError, T]
 
   /*
       Registration stuff

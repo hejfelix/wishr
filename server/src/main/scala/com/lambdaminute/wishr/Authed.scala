@@ -2,15 +2,19 @@ package com.lambdaminute.wishr
 
 import cats.Id
 import cats.effect.IO
-import com.lambdaminute.wishr.model.tags._
 import com.lambdaminute.wishr.model._
+import com.lambdaminute.wishr.model.tags._
 import com.lambdaminute.wishr.persistence.Persistence
 
 class Authed(token: SessionToken, persistence: Persistence[IO, String]) extends AuthedApi[Id] {
 
+  private def discard[T](t: T): Unit = {
+    val _ = t
+  }
+
   def md5HashString(s: String): String = {
-    import java.security.MessageDigest
     import java.math.BigInteger
+    import java.security.MessageDigest
     val md           = MessageDigest.getInstance("MD5")
     val digest       = md.digest(s.getBytes)
     val bigInt       = new BigInteger(1, digest)
@@ -62,17 +66,17 @@ class Authed(token: SessionToken, persistence: Persistence[IO, String]) extends 
     (for {
       userInfo <- persistence.getUserInfo(token)
       _        <- persistence.updateWish(wish)
-    } yield ()).fold(err => throw new Exception(err), identity _).unsafeRunSync()
+    } yield ()).fold(err => throw new Exception(err), discard).unsafeRunSync()
 
   override def deleteWish(id: Int): Id[Unit] =
     persistence
       .deleteWish(id.asWishId)
-      .fold(err => throw new Exception(err), identity)
+      .fold(err => throw new Exception(err), discard)
       .unsafeRunSync()
 
   override def grantWish(wishId: Int): Id[Unit] =
     persistence
       .deleteWish(wishId.asWishId)
-      .fold(err => throw new Exception(err), identity)
+      .fold(err => throw new Exception(err), discard)
       .unsafeRunSync()
 }

@@ -112,4 +112,5 @@ lazy val client = (project in file("client"))
     scalaJSUseMainModuleInitializer := true,
     addCompilerPlugin("org.scalameta" % "paradise" % "3.0.0-M11" cross CrossVersion.full)
   )
+  .disablePlugins(TpolecatPlugin)
   .dependsOn(modelJS)
