@@ -13,8 +13,8 @@ It's a full-stack Scala wish list web-app.
 * doobie https://github.com/tpolecat/doobie
 
 #### Client
-* scalajs-react https://github.com/japgolly/scalajs-react
-* scalajs-react-components https://github.com/chandu0101/scalajs-react-components
+* Slinky https://github.com/shadaj/slinky
+* slinky-wrappers https://github.com/hejfelix/slinky-wrappers
 
 ## Disclaimer
 
