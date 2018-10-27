@@ -13,7 +13,9 @@ body {
 }
 
 .wishCardImg {
-    width:100% !important;
+    width: auto;
+    height: auto;
+    max-width: -webkit-fill-available;
 }
 
 .modal {
